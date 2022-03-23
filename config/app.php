@@ -43,6 +43,19 @@ return [
 
     'debug' => (bool) env('APP_DEBUG', false),
 
+    'debug_blacklist' => [
+        '_ENV' => [
+            "OCTOPUS_API_USER",
+            "OCTOPUS_API_PWD",
+            "OCTOPUS_API_UUID",
+        ],
+        '_SERVER' => [
+            "OCTOPUS_API_USER",
+            "OCTOPUS_API_PWD",
+            "OCTOPUS_API_UUID",
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Application URL
