@@ -19,7 +19,34 @@
         echo $e;
     }
     if($dossierToken){
-        echo "Token de dossier récupérer";
+        echo "Token récupérer <br>";
+    }
+    if($dossierToken){
+        echo "Token de dossier récupérer <br>";
+    }
+    if($modifiedBuyBookings){
+        echo "<h2>Modified Buy Bookings</h2>";
+        echo '<pre>'; 
+        print_r($modifiedBuyBookings); 
+        echo '</pre>';
+    }
+    if($deletedBuyBookings){
+        echo "<h2>Deleted Buy Bookings</h2>";
+        echo '<pre>'; 
+        print_r($deletedBuyBookings); 
+        echo '</pre>';
+    }
+    if($modifiedSellBookings){
+        echo "<h2>Modified Sell Bookings</h2>";
+        echo '<pre>'; 
+        print_r($modifiedSellBookings); 
+        echo '</pre>';
+    }
+    if($deletedSellBookings){
+        echo "<h2>Deleted Sell Bookings</h2>";
+        echo '<pre>'; 
+        print_r($deletedSellBookings); 
+        echo '</pre>';
     }
     ?>
 </body>
