@@ -148,7 +148,12 @@ class DashBoardController extends Controller
             $booking->paymentMethod = $value["paymentMethod"];
             $booking->reference = $value["reference"];
 
-            $relationId = $this->createRelation($value["relationIdentificationServiceData"]["relationKey"]["id"]);
+            if (Relation::where('id', $value["relationIdentificationServiceData"]["relationKey"]["id"])->exists()) {
+                $relationId = $value["relationIdentificationServiceData"]["relationKey"]["id"];
+             }
+             else{
+                $relationId = $this->createRelation($value["relationIdentificationServiceData"]["relationKey"]["id"]);
+             }
 
             $booking->relation_id = $relationId;
  
