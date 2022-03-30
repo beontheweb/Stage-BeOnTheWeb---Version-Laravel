@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Auth\Events\Registered;
-use App\Providers\RouteServiceProvider;
+use Illuminate\Support\Facades\Redirect;
 use App\Models\User;
 
 class RegisterController extends Controller
@@ -20,7 +20,7 @@ class RegisterController extends Controller
         request()->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
-            'password' => ['required', 'string', 'min:8', 'confirmed']
+            'password' => ['required', 'string', 'regex:/^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/', 'confirmed']
         ]);
 
         $user = User::create([
@@ -31,8 +31,6 @@ class RegisterController extends Controller
 
         //event(new Registered($user));
 
-        Auth::login($user);
-
-        return redirect()->to(RouteServiceProvider::HOME);
+        return Redirect::route('users.index');
     }
 }

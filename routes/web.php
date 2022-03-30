@@ -13,11 +13,18 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get("/", [\App\Http\Controllers\DashBoardController::class, "index"])->middleware('auth')->name("index.dashboard");
+Route::get("/", [\App\Http\Controllers\DashBoardController::class, "index"])->middleware('auth')->name("dashboard.index");
 Route::redirect("/home", "/");
 
-Route::get('/register', [\App\Http\Controllers\RegisterController::class, 'show'])->name('register');
-Route::post('/register', [\App\Http\Controllers\RegisterController::class, 'register'])->name('register');
+Route::get("/bookings", [\App\Http\Controllers\BookingController::class, "index"])->middleware('auth')->name("bookings.index");
+
+Route::get("/users", [\App\Http\Controllers\UserController::class, "index"])->middleware('auth')->name("users.index");
+Route::get("/user/{id}", [\App\Http\Controllers\UserController::class, "show"])->middleware('auth')->name("user.show");
+Route::patch("/user/{id}", [\App\Http\Controllers\UserController::class, "update"])->middleware('auth')->name("user.update");
+Route::delete("/users/{id}", [\App\Http\Controllers\UserController::class, "delete"])->middleware('auth')->name("users.delete");
+
+Route::get('/register', [\App\Http\Controllers\RegisterController::class, 'show'])->middleware('auth')->name('register');
+Route::post('/register', [\App\Http\Controllers\RegisterController::class, 'register'])->middleware('auth')->name('register');
 
 Route::get('/login', [\App\Http\Controllers\LoginController::class, 'show'])->name('login');
 Route::post('/login', [\App\Http\Controllers\LoginController::class, 'login'])->name('login');

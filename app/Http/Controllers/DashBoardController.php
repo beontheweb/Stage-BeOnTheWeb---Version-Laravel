@@ -27,7 +27,7 @@ class DashBoardController extends Controller
         $this->fillDB($sellBookings);
 
  
-        return View::make('welcome', 
+        return View::make('dashboard.index', 
             [
              "token" => $this->token, 
              "dossierToken" => $this->dossierToken, 
@@ -115,6 +115,29 @@ class DashBoardController extends Controller
         return $responseBody;
     }
 
+    public function getVatBasePercentage($tvaCodeKey, $dossierId = 45119){
+        // URL
+        $apiURL = 'https://service.inaras.be/octopus-rest-api/v1/dossiers/'.$dossierId.'/vatcodes';
+  
+        // Headers
+        $headers = [
+            'dossierToken' => $this->dossierToken
+        ];
+  
+        $response = Http::withHeaders($headers)->get($apiURL);
+  
+        $responseBody = json_decode($response->getBody(), true);
+
+        foreach ($responseBody as $value) {
+            if($value["code"] == $tvaCodeKey){
+                return $value["basePercentage"];
+            }
+        }
+
+        return 21.0;
+
+    }
+
     public function truncate(){
         DB::table('bookings')->truncate();
         DB::table('booking_lines')->truncate();
@@ -136,6 +159,7 @@ class DashBoardController extends Controller
             $booking = new Booking;
  
             $booking->documentNumber = $value["documentSequenceNr"];
+            $booking->alphaNumericalNumber = substr($value["bookyearPeriodeNr"], 0, 4)."-".$value["journalKey"]."-".sprintf("%03d", $value["documentSequenceNr"]);
             $booking->amount = $value["amount"];
             $booking->bookYearId = $value["bookyearKey"]["id"];
             $booking->bookYearNumber = $value["bookyearPeriodeNr"];
@@ -148,8 +172,8 @@ class DashBoardController extends Controller
             $booking->paymentMethod = $value["paymentMethod"];
             $booking->reference = $value["reference"];
 
-            if (Relation::where('id', $value["relationIdentificationServiceData"]["relationKey"]["id"])->exists()) {
-                $relationId = $value["relationIdentificationServiceData"]["relationKey"]["id"];
+            if (Relation::where('externalID', $value["relationIdentificationServiceData"]["relationKey"]["id"])->exists()) {
+                $relationId = Relation::where('externalID', $value["relationIdentificationServiceData"]["relationKey"]["id"])->pluck('id')[0];
              }
              else{
                 $relationId = $this->createRelation($value["relationIdentificationServiceData"]["relationKey"]["id"]);
@@ -158,6 +182,7 @@ class DashBoardController extends Controller
             $booking->relation_id = $relationId;
  
             $booking->save();
+
             return $booking->id;
     }
 
@@ -170,10 +195,12 @@ class DashBoardController extends Controller
             $line->vatAmount = $value["vatAmount"];
             $line->vatCodeKey = $value["vatCodeKey"];
             $line->vatPercentage = array_key_exists("vatRecupPercentage", $value) ? $value["vatRecupPercentage"] : 100;
+            $line->vatBasePercentage = $this->getVatBasePercentage($value["vatCodeKey"]);
             $line->comment = $value["comment"];
             $line->booking_id = $id;
  
             $line->save();
+
     }
 
     public function createRelation($id){
@@ -181,11 +208,9 @@ class DashBoardController extends Controller
             $value = $this->getRelation($id);
             $value = $value[0];
 
-            $relation = Relation::firstOrCreate([
-                'id' => $id
-            ]);
+            $relation = new Relation();
  
-            $relation->id = $id;
+            $relation->externalID = $id;
             $relation->name = $value["name"];
             $relation->firstName = $value["firstName"];
             $relation->contactPerson = $value["contactPerson"];

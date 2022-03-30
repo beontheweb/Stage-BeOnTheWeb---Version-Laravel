@@ -24,10 +24,10 @@
                         <a class="nav-link active" aria-current="page" href="/">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Bookings</a>
+                        <a class="nav-link" href="/bookings">Bookings</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Users</a>
+                        <a class="nav-link" href="/users">Users</a>
                     </li>
                 </ul>
                 <span class="navbar-text">
@@ -43,36 +43,9 @@
             </div>
         </div>
     </nav>
-    <main class="container p-2">
-        <strong>Database Connected: </strong>
-        <?php
-        try {
-            \DB::connection()->getPDO();
-            echo \DB::connection()->getDatabaseName();
-            echo '<br>';
-        } catch (\Exception $e) {
-            echo $e;
-        }
-        if ($dossierToken) {
-            echo 'Token récupérer <br>';
-        }
-        if ($dossierToken) {
-            echo 'Token de dossier récupérer <br>';
-        }
-        if ($modifiedBuyBookings) {
-            echo '<h2>Modified Buy Bookings</h2>';
-            echo '<pre>';
-            print_r($modifiedBuyBookings);
-            echo '</pre>';
-        }
-        if ($modifiedSellBookings) {
-            echo '<h2>Modified Sell Bookings</h2>';
-            echo '<pre>';
-            print_r($modifiedSellBookings);
-            echo '</pre>';
-        }
-        ?>
-    </main>
+
+    @yield('main')
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous">
     </script>

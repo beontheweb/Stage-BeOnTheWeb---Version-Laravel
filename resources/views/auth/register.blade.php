@@ -36,6 +36,7 @@
                 <input type="password" class="form-control" name="password_confirmation" id="password_confirmation">
             </div>
             <button type="submit" class="btn btn-primary me-3">Register</button>
+            <a href="users" class="btn btn-primary me-3">Annuler</a>
 
         </form>
 
