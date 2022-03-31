@@ -10,6 +10,8 @@
             <th scope="col">#</th>
             <th scope="col">Name</th>
             <th scope="col">Email</th>
+            <th scope="col">Date de création</th>
+            <th scope="col">Dernière update</th>
             <th scope="col">Action</th>
             <th scope="col"></th>
           </tr>
@@ -21,6 +23,8 @@
                         <th scope="row">{{$user->id}}</th>
                         <td>{{$user->name}}</td>
                         <td>{{$user->email}}</td>
+                        <td>{{$user->created_at}}</td>
+                        <td>{{$user->updated_at}}</td>
                         <td>
                             <a href="/user/{{$user->id}}" class="btn btn-primary">Modifier</a>
                         </td>

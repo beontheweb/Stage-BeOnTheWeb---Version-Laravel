@@ -11,7 +11,7 @@ class BookingController extends Controller
 {
     public function index() {
 
-        $bookings = Booking::all();
+        $bookings = Booking::with("relation")->get();
 
         $bookingLines = BookingLine::all();
 
@@ -26,6 +26,7 @@ class BookingController extends Controller
         );
     }
 
+    //Calcule la somme des montants HTVA et TVA des Booking Lines
     public function calculateTVA($bookings, $bookingLines){
         foreach ($bookings as $booking) {
             $booking->HTVA = 0;

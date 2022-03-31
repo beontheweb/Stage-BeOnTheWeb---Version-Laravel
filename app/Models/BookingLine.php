@@ -14,7 +14,6 @@ class BookingLine extends Model
         return $this->belongsTo(Booking::class);
     }
 
-    public $timestamps = false;
     protected $fillable = ['alphaNumericalNumber', 'accountKey', 'baseAmount', 'vatAmount', 'vatCodeKey', 'vatPercentage', 'vatBasePercentage', 'comment', 'booking_id'];
 
 }

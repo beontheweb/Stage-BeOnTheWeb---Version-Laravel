@@ -14,5 +14,4 @@ class Relation extends Model
         return $this->hasMany(Booking::class);
     }
 
-    public $timestamps = false;
 }

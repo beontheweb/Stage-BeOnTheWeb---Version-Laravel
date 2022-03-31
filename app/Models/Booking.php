@@ -19,7 +19,6 @@ class Booking extends Model
         return $this->belongsTo(Relation::class);
     }
 
-    public $timestamps = false;
     protected $fillable = ['alphaNumericalNumber', 'documentNumber', 'amount', 'bookYearId', 'bookYearNumber', 'comment', 'currency', 'bookingDate', 'expiryDate', 'echangeRate', 'journalKey', 'paymentMethod', 'reference', 'relation_id'];
 
 }

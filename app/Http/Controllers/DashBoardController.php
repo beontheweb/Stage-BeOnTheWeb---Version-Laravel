@@ -144,6 +144,7 @@ class DashBoardController extends Controller
   
         $responseBody = json_decode($response->getBody(), true);
 
+        //Cherche dans le tableau reçu pour la bonne valeur
         foreach ($responseBody as $value) {
             if($value["code"] == $tvaCodeKey){
                 return $value["basePercentage"];
@@ -154,6 +155,7 @@ class DashBoardController extends Controller
 
     }
 
+    //Vide les tables de donnée. Seulement utilsé pour des tests
     public function truncate(){
         DB::table('bookings')->truncate();
         DB::table('booking_lines')->truncate();
@@ -166,6 +168,7 @@ class DashBoardController extends Controller
         }
     }
 
+    //Crée ou update un booking si alphaNumericalNumber existe déjà
     public function createBooking($value){
 
             $alphaNumericalNumber = substr($value["bookyearPeriodeNr"], 0, 4)."-".$value["journalKey"]."-".sprintf("%03d", $value["documentSequenceNr"]);
@@ -203,6 +206,7 @@ class DashBoardController extends Controller
             return $booking->id;
     }
 
+    //Crée ou update une booking line si alphaNumericalNumber existe déjà
     public function createBookingLine($value, $id, $lineID, $alphaNumericalNumber){
 
         $alphaNumericalNumber = $alphaNumericalNumber."-".sprintf("%02d", $lineID);
@@ -223,9 +227,11 @@ class DashBoardController extends Controller
 
     }
 
+    //Crée une nouvelle relation
     public function createRelation($id){
 
             $value = $this->getRelation($id);
+            //Renvoie un tableau dans un tableau, il faut sélectionner le premier élément
             $value = $value[0];
 
             $relation = new Relation();
