@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get("/", [\App\Http\Controllers\DashBoardController::class, "index"])->middleware('auth')->name("dashboard.index");
 Route::redirect("/home", "/");
+Route::get("/updateDB/{timestamp}", [\App\Http\Controllers\DashBoardController::class, "updateDB"])->middleware('auth')->name("dashboard.updateDB");
 
 Route::get("/bookings", [\App\Http\Controllers\BookingController::class, "index"])->middleware('auth')->name("bookings.index");
 

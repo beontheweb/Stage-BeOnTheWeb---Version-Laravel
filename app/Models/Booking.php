@@ -20,4 +20,6 @@ class Booking extends Model
     }
 
     public $timestamps = false;
+    protected $fillable = ['alphaNumericalNumber', 'documentNumber', 'amount', 'bookYearId', 'bookYearNumber', 'comment', 'currency', 'bookingDate', 'expiryDate', 'echangeRate', 'journalKey', 'paymentMethod', 'reference', 'relation_id'];
+
 }

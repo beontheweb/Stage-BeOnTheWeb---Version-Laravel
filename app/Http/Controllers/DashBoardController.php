@@ -17,16 +17,32 @@ class DashBoardController extends Controller
     public $dossierToken;
 
     public function index() {
+ 
+        return View::make('dashboard.index', 
+            [
+             "token" => null, 
+             "dossierToken" => null, 
+             "modifiedBuyBookings" => null,
+             "modifiedSellBookings" => null
+            ]
+        );
+    }
+
+    public function updateDB($timestamp) {
         $this->token = $this->getToken();
         $this->dossierToken = $this->getDossierToken();
-        $buyBookings = $this->getBookings(true);
-        $sellBookings = $this->getBookings(false);
 
-        $this->truncate();
-        $this->fillDB($buyBookings);
-        $this->fillDB($sellBookings);
+        $buyBookings = $this->getBookings(true, $timestamp);
+        $sellBookings = $this->getBookings(false, $timestamp);
 
- 
+        //$this->truncate();
+        if(!isset($buyBookings["technicalInfo"])){
+            $this->fillDB($buyBookings);
+        }
+        if(!isset($sellBookings["technicalInfo"])){
+            $this->fillDB($sellBookings);
+        }
+
         return View::make('dashboard.index', 
             [
              "token" => $this->token, 
@@ -78,13 +94,13 @@ class DashBoardController extends Controller
         return $responseBody["Dossiertoken"];
     }
 
-    public function getBookings($isBuy, $dossierId = 45119) {
+    public function getBookings($isBuy, $timestamp, $dossierId = 45119) {
 
         //Switch between Buy and Sell Bookings
         $journalKey = $isBuy ? "A1" : "V1";
 
         // URL
-        $apiURL = 'https://service.inaras.be/octopus-rest-api/v1/dossiers/'.$dossierId.'/buysellbookings/modified?bookyearId=1&journalKey='.$journalKey.'&modifiedTimeStamp=2020-02-08%2014%3A55%3A00.000';
+        $apiURL = 'https://service.inaras.be/octopus-rest-api/v1/dossiers/'.$dossierId.'/buysellbookings/modified?bookyearId=1&journalKey='.$journalKey.'&modifiedTimeStamp='.$timestamp;
   
         // Headers
         $headers = [
@@ -146,31 +162,13 @@ class DashBoardController extends Controller
     public function fillDB($array){
 
         foreach ($array as $value) {
-            $id = $this->createBooking($value);
-
-            foreach ($value["bookingLines"] as $line) {
-                $this->createBookingLine($line, $id);
-            }
+            $this->createBooking($value);
         }
     }
 
     public function createBooking($value){
-            
-            $booking = new Booking;
- 
-            $booking->documentNumber = $value["documentSequenceNr"];
-            $booking->alphaNumericalNumber = substr($value["bookyearPeriodeNr"], 0, 4)."-".$value["journalKey"]."-".sprintf("%03d", $value["documentSequenceNr"]);
-            $booking->amount = $value["amount"];
-            $booking->bookYearId = $value["bookyearKey"]["id"];
-            $booking->bookYearNumber = $value["bookyearPeriodeNr"];
-            $booking->comment = $value["comment"];
-            $booking->currency = $value["currencyCode"];
-            $booking->bookingDate = $value["documentDate"];
-            $booking->expiryDate = $value["expiryDate"];
-            $booking->echangeRate = $value["exchangeRate"];
-            $booking->journalKey = $value["journalKey"];
-            $booking->paymentMethod = $value["paymentMethod"];
-            $booking->reference = $value["reference"];
+
+            $alphaNumericalNumber = substr($value["bookyearPeriodeNr"], 0, 4)."-".$value["journalKey"]."-".sprintf("%03d", $value["documentSequenceNr"]);
 
             if (Relation::where('externalID', $value["relationIdentificationServiceData"]["relationKey"]["id"])->exists()) {
                 $relationId = Relation::where('externalID', $value["relationIdentificationServiceData"]["relationKey"]["id"])->pluck('id')[0];
@@ -179,27 +177,49 @@ class DashBoardController extends Controller
                 $relationId = $this->createRelation($value["relationIdentificationServiceData"]["relationKey"]["id"]);
              }
 
-            $booking->relation_id = $relationId;
- 
-            $booking->save();
+            $booking = Booking::updateOrCreate(
+                ['alphaNumericalNumber' => $alphaNumericalNumber],
+                [
+                    'documentNumber' => $value["documentSequenceNr"],
+                    'amount' => $value["amount"],
+                    'bookYearId' => $value["bookyearKey"]["id"],
+                    'bookYearNumber' => $value["bookyearPeriodeNr"],
+                    'comment' => $value["comment"],
+                    'currency' => $value["currencyCode"],
+                    'bookingDate' => $value["documentDate"],
+                    'expiryDate' => $value["expiryDate"],
+                    'echangeRate' => $value["exchangeRate"],
+                    'journalKey' => $value["journalKey"],
+                    'paymentMethod' => $value["paymentMethod"],
+                    'reference' => $value["reference"],
+                    'relation_id' => $relationId
+                ]
+            );
+
+            foreach ($value["bookingLines"] as $key => $line) {
+                $this->createBookingLine($line, $booking->id, $key+1, $alphaNumericalNumber);
+            }
 
             return $booking->id;
     }
 
-    public function createBookingLine($value, $id){
-        
-            $line = new BookingLine();
- 
-            $line->accountKey = $value["accountKey"];
-            $line->baseAmount = $value["baseAmount"];
-            $line->vatAmount = $value["vatAmount"];
-            $line->vatCodeKey = $value["vatCodeKey"];
-            $line->vatPercentage = array_key_exists("vatRecupPercentage", $value) ? $value["vatRecupPercentage"] : 100;
-            $line->vatBasePercentage = $this->getVatBasePercentage($value["vatCodeKey"]);
-            $line->comment = $value["comment"];
-            $line->booking_id = $id;
- 
-            $line->save();
+    public function createBookingLine($value, $id, $lineID, $alphaNumericalNumber){
+
+        $alphaNumericalNumber = $alphaNumericalNumber."-".sprintf("%02d", $lineID);
+
+        BookingLine::updateOrCreate(
+            ['alphaNumericalNumber' => $alphaNumericalNumber],
+            [
+                'accountKey' => $value["accountKey"],
+                'baseAmount' => $value["baseAmount"],
+                'vatAmount' => $value["vatAmount"],
+                'vatCodeKey' => $value["vatCodeKey"],
+                'vatPercentage' => array_key_exists("vatRecupPercentage", $value) ? $value["vatRecupPercentage"] : 100,
+                'vatBasePercentage' => $this->getVatBasePercentage($value["vatCodeKey"]),
+                'comment' => $value["comment"],
+                'booking_id' => $id,
+            ]
+        );
 
     }
 

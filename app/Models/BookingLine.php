@@ -15,4 +15,6 @@ class BookingLine extends Model
     }
 
     public $timestamps = false;
+    protected $fillable = ['alphaNumericalNumber', 'accountKey', 'baseAmount', 'vatAmount', 'vatCodeKey', 'vatPercentage', 'vatBasePercentage', 'comment', 'booking_id'];
+
 }

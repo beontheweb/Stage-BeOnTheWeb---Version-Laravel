@@ -2,6 +2,9 @@
 
 @section('main')
 <main class="container p-2">
+    <a href="../../updateDB/2020-02-08 14:55:00.000" class="btn btn-primary">Reset DB</a>
+    <a href="../../updateDB/{{date_create()->modify('-1 days')->format('Y-m-d H:i:s.v')}}" class="btn btn-primary">Dernière 24h</a>
+    <br>
     <strong>Database Connected: </strong>
     <?php
     try {
