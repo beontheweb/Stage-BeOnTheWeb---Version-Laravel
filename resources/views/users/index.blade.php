@@ -3,8 +3,8 @@
 @section('main')
 <main class="container p-2">
     <h1>Users</h1>
-    <a href="register" class="btn btn-primary">Enregistrer un nouvel utilisateur</a>
-    <table class="table">
+    <a href="register" class="btn btn-primary mb-4">Enregistrer un nouvel utilisateur</a>
+    <table id="table1" class="display">
         <thead>
           <tr>
             <th scope="col">#</th>
@@ -42,4 +42,12 @@
         </tbody>
       </table>
 </main>
+@endsection
+
+@section('script')
+    <script>
+        $(document).ready( function () {
+            $('#table1').DataTable();
+        } );
+    </script>
 @endsection

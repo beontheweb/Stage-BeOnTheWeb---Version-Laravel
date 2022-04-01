@@ -4,6 +4,7 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use App\Jobs\UpdateDB;
 
 class Kernel extends ConsoleKernel
 {
@@ -15,7 +16,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        //* * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
+        //* * * * * /usr/bin/php /home/my_user/my_app/artisan schedule:run >> /dev/null 2>&1
+        $schedule->job(new UpdateDB)->everyMinute();
     }
 
     /**

@@ -3,7 +3,7 @@
 @section('main')
 <main class="container p-2">
     <h1>Bookings</h1>
-    <table class="table">
+    <table id="table1" class="display">
         <thead>
           <tr>
             <th scope="col">#</th>
@@ -38,4 +38,12 @@
         </tbody>
       </table>
 </main>
+@endsection
+
+@section('script')
+  <script>
+      $(document).ready( function () {
+        $('#table1').DataTable();
+      } );
+  </script>
 @endsection

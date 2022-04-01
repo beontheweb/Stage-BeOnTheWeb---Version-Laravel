@@ -32,8 +32,8 @@ class DashBoardController extends Controller
         $this->token = $this->getToken();
         $this->dossierToken = $this->getDossierToken();
 
-        $buyBookings = $this->getBookings(true, $timestamp);
-        $sellBookings = $this->getBookings(false, $timestamp);
+        $buyBookings = $this->getBookings("A1", $timestamp);
+        $sellBookings = $this->getBookings("V1", $timestamp);
 
         //$this->truncate();
         if(!isset($buyBookings["technicalInfo"])){
@@ -94,10 +94,7 @@ class DashBoardController extends Controller
         return $responseBody["Dossiertoken"];
     }
 
-    public function getBookings($isBuy, $timestamp, $dossierId = 45119) {
-
-        //Switch between Buy and Sell Bookings
-        $journalKey = $isBuy ? "A1" : "V1";
+    public function getBookings($journalKey, $timestamp, $dossierId = 45119) {
 
         // URL
         $apiURL = 'https://service.inaras.be/octopus-rest-api/v1/dossiers/'.$dossierId.'/buysellbookings/modified?bookyearId=1&journalKey='.$journalKey.'&modifiedTimeStamp='.$timestamp;
