@@ -30,7 +30,7 @@ class UpdateDB implements ShouldQueue
      */
     public function handle()
     {
-        $controller = new \App\Http\Controllers\DashBoardController();
-        $controller->updateDB(date_create()->modify('-1 days')->format('Y-m-d H:i:s.v'));
+        //$controller = new \App\Http\Controllers\DashBoardController();
+        //$controller->updateDB(date_create()->modify('-1 days')->format('Y-m-d H:i:s.v'));
     }
 }

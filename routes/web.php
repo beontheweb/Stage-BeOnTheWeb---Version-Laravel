@@ -15,14 +15,19 @@ use Illuminate\Support\Facades\Route;
 
 Route::get("/", [\App\Http\Controllers\DashBoardController::class, "index"])->middleware('auth')->name("dashboard.index");
 Route::redirect("/home", "/");
-Route::get("/updateDB/{timestamp}", [\App\Http\Controllers\DashBoardController::class, "updateDB"])->middleware('auth')->name("dashboard.updateDB");
+Route::get("/updateDB", [\App\Http\Controllers\DashBoardController::class, "updateDB"])->middleware('auth')->name("dashboard.updateDB");
 
 Route::get("/bookings", [\App\Http\Controllers\BookingController::class, "index"])->middleware('auth')->name("bookings.index");
+
+Route::get("/relations", [\App\Http\Controllers\RelationController::class, "index"])->middleware('auth')->name("relations.index");
 
 Route::get("/users", [\App\Http\Controllers\UserController::class, "index"])->middleware('auth')->name("users.index");
 Route::get("/user/{id}", [\App\Http\Controllers\UserController::class, "show"])->middleware('auth')->name("user.show");
 Route::patch("/user/{id}", [\App\Http\Controllers\UserController::class, "update"])->middleware('auth')->name("user.update");
 Route::delete("/users/{id}", [\App\Http\Controllers\UserController::class, "delete"])->middleware('auth')->name("users.delete");
+
+Route::get("/params", [\App\Http\Controllers\ParamsController::class, "index"])->middleware('auth')->name("params.index");
+Route::patch("/params/{octopusId}-{zohoId}", [\App\Http\Controllers\ParamsController::class, "update"])->middleware('auth')->name("params.update");
 
 Route::get('/register', [\App\Http\Controllers\RegisterController::class, 'show'])->middleware('auth')->name('register');
 Route::post('/register', [\App\Http\Controllers\RegisterController::class, 'register'])->middleware('auth')->name('register');

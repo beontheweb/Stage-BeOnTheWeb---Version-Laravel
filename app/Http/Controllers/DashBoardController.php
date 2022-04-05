@@ -8,65 +8,92 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\DB;
 use App\Models\Booking;
 use App\Models\BookingLine;
+use App\Models\GeneralParam;
 use App\Models\Relation;
+use App\Models\Octopus;
+use App\Models\Zoho;
 
 class DashBoardController extends Controller
 {
 
     public $token;
     public $dossierToken;
+    public $octopus;
+    public $zoho;
 
     public function index() {
- 
+
+        $journalKeys = explode(",", Octopus::get()->first()->journalKeys);
+        foreach ($journalKeys as $key => $journalKey) {
+            $journalKeys[$key] = trim($journalKey);
+        }
+
         return View::make('dashboard.index', 
             [
-             "token" => null, 
-             "dossierToken" => null, 
-             "modifiedBuyBookings" => null,
-             "modifiedSellBookings" => null
+             "modifiedBookings" => null,
+             "lastUpdated" => GeneralParam::get()->first()->lastUpdated,
+             "journals" => $journalKeys
             ]
         );
     }
 
-    public function updateDB($timestamp) {
+    public function updateDB(Request $request) {
+        $completeBookings = [];
+        $journalKeys = $request->get("journals");
+        $this->octopus = Octopus::get()->first();
+        $this->zoho = Zoho::get()->first();
         $this->token = $this->getToken();
         $this->dossierToken = $this->getDossierToken();
+        $params = GeneralParam::get()->first();
 
-        $buyBookings = $this->getBookings("A1", $timestamp);
-        $sellBookings = $this->getBookings("V1", $timestamp);
+        $timestamp = $request->timestamp . " 00:00:00.000";
 
-        //$this->truncate();
-        if(!isset($buyBookings["technicalInfo"])){
-            $this->fillDB($buyBookings);
+        //Pour chaque clé de journal, appelle l'api octopus pour récupérer les bookings correspondant et mets à jour la base de donnée
+        if ($journalKeys) {
+            foreach ($journalKeys as $journalKey) {
+                //Retire les espaces
+                $journalKey = trim($journalKey);
+                
+                $bookings = $this->getBookings($journalKey, $timestamp);
+                if(!isset($bookings["technicalInfo"])){
+                    $this->fillDB($bookings);
+                }
+                //Juste pour le débuggage
+                array_push($completeBookings, $bookings);
+            }
+
+            $params->lastUpdated = date('Y-m-d H:i:s');
+            $params->save();
         }
-        if(!isset($sellBookings["technicalInfo"])){
-            $this->fillDB($sellBookings);
+
+        $journalKeys = explode(",", $this->octopus->journalKeys);
+        foreach ($journalKeys as $key => $journalKey) {
+            $journalKeys[$key] = trim($journalKey);
         }
 
         return View::make('dashboard.index', 
             [
-             "token" => $this->token, 
-             "dossierToken" => $this->dossierToken, 
-             "modifiedBuyBookings" => $buyBookings,
-             "modifiedSellBookings" => $sellBookings
+             "modifiedBookings" => $completeBookings,
+             "lastUpdated" => $params->lastUpdated,
+             "journals" => $journalKeys
             ]
         );
     }
 
     public function getToken() {
         // URL
-        $apiURL = 'https://service.inaras.be/octopus-rest-api/v1/authentication';
+        $apiURL = $this->octopus->urlWs.'/authentication';
 
         // POST Data
         $postInput = [
-            'user' => env("OCTOPUS_API_USER"),
-            'password' => env("OCTOPUS_API_PWD")
+            'user' => $this->octopus->user,
+            'password' => $this->octopus->password
         ];
   
         // Headers
         $headers = [
             'Accept' => 'application/json',
-            'softwareHouseUuid' => env("OCTOPUS_API_UUID"),
+            'softwareHouseUuid' => $this->octopus->softwareHouseUuid,
             'Content-Type' => 'application/json'
         ];
   
@@ -77,9 +104,9 @@ class DashBoardController extends Controller
         return $responseBody["token"];
     }
 
-    public function getDossierToken($dossierId = 45119) {
+    public function getDossierToken() {
         // URL
-        $apiURL = 'https://service.inaras.be/octopus-rest-api/v1/dossiers?dossierId='.$dossierId;
+        $apiURL = $this->octopus->urlWs.'/dossiers?dossierId='.$this->octopus->idDossier;
   
         // Headers
         $headers = [
@@ -94,10 +121,10 @@ class DashBoardController extends Controller
         return $responseBody["Dossiertoken"];
     }
 
-    public function getBookings($journalKey, $timestamp, $dossierId = 45119) {
+    public function getBookings($journalKey, $timestamp) {
 
         // URL
-        $apiURL = 'https://service.inaras.be/octopus-rest-api/v1/dossiers/'.$dossierId.'/buysellbookings/modified?bookyearId=1&journalKey='.$journalKey.'&modifiedTimeStamp='.$timestamp;
+        $apiURL = $this->octopus->urlWs.'/dossiers/'.$this->octopus->idDossier.'/buysellbookings/modified?bookyearId='.$this->octopus->bookYearKey.'&journalKey='.$journalKey.'&modifiedTimeStamp='.$timestamp;
   
         // Headers
         $headers = [
@@ -111,10 +138,10 @@ class DashBoardController extends Controller
         return $responseBody;
     }
 
-    public function getRelation($relationId, $dossierId = 45119) {
+    public function getRelation($relationId) {
 
         // URL
-        $apiURL = 'https://service.inaras.be/octopus-rest-api/v1/dossiers/'.$dossierId.'/relations?relationId='.$relationId;
+        $apiURL = $this->octopus->urlWs.'/dossiers/'.$this->octopus->idDossier.'/relations?relationId='.$relationId;
   
         // Headers
         $headers = [
@@ -128,9 +155,9 @@ class DashBoardController extends Controller
         return $responseBody;
     }
 
-    public function getVatBasePercentage($tvaCodeKey, $dossierId = 45119){
+    public function getVatBasePercentage($tvaCodeKey){
         // URL
-        $apiURL = 'https://service.inaras.be/octopus-rest-api/v1/dossiers/'.$dossierId.'/vatcodes';
+        $apiURL = $this->octopus->urlWs.'/dossiers/'.$this->octopus->idDossier.'/vatcodes';
   
         // Headers
         $headers = [
