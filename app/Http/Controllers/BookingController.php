@@ -19,9 +19,11 @@ class BookingController extends Controller
 
 
 
+
         return View::make('bookings.index', 
             [
-                "bookings" => $bookings
+                "bookings" => $bookings,
+                "bookingLines" => $bookingLines
             ]
         );
     }

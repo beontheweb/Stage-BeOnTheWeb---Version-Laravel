@@ -1,8 +1,10 @@
 @extends('template.index')
 
 @section('main')
-<main class="container p-2">
+<main>
+  <div class="container p-2">
     <h1>Relations</h1>
+  </div>
     <table id="table1" class="display">
         <thead>
           <tr>

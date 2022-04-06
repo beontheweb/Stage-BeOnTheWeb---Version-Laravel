@@ -1,9 +1,11 @@
 @extends('template.index')
 
 @section('main')
-    <main class="container p-2">
-        <h1>Users</h1>
-        <a href="register" class="btn btn-primary mb-4">Enregistrer un nouvel utilisateur</a>
+    <main>
+        <div class="container p-2">
+            <h1>Users</h1>
+            <a href="register" class="btn btn-primary mb-4">Enregistrer un nouvel utilisateur</a>
+        </div>
         <table id="table1" class="display">
             <thead>
                 <tr>
