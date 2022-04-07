@@ -13,3 +13,23 @@
 .dataTables_paginate{
     margin-right: 2%;
 }
+
+.error {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: .875em;
+    color: #dc3545;
+}
+
+.has-error .form-control {
+    border-color: #a94442;
+    -webkit-box-shadow: inset 0 1px 1px rgb(0 0 0 / 8%);
+    box-shadow: inset 0 1px 1px rgb(0 0 0 / 8%);
+}
+
+.has-success .form-control {
+    border-color: #3c763d;
+    -webkit-box-shadow: inset 0 1px 1px rgb(0 0 0 / 8%);
+    box-shadow: inset 0 1px 1px rgb(0 0 0 / 8%);
+}
