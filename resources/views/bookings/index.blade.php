@@ -2,7 +2,7 @@
 
 @section('main')
     <main>
-        <div class="container p-2">
+        <div class="ms-4">
             <h1>Bookings</h1>
         </div>
         <table id="table1" class="display">
@@ -17,6 +17,7 @@
                     <th scope="col">Montant HTVA</th>
                     <th scope="col">TVA</th>
                     <th scope="col">Montant TVAC</th>
+                    <th scope="col">Référence</th>
                     <th scope="col">Créé le</th>
                     <th scope="col">Modifié le</th>
                 </tr>
@@ -30,12 +31,13 @@
                             <td>{{ $booking->alphaNumericalNumber }}</td>
                             <td>{{ $booking->comment }}</td>
                             <td>{{ $booking->relation->name }}</td>
-                            <td>{{ $booking->bookingDate }}</td>
+                            <td>{{ $booking->bookingDate->format("Y-m-d") }}</td>
                             <td>{{ $booking->HTVA }}</td>
                             <td>{{ $booking->TVA }}</td>
-                            <td>{{ $booking->amount }} {{ $booking->currency }}</td>
-                            <td>{{ $booking->created_at }}</td>
-                            <td>{{ $booking->updated_at }}</td>
+                            <td class="currency">{{ $booking->amount }} {{ $booking->currency }}</td>
+                            <td>{{ $booking->reference }}</td>
+                            <td>{{ $booking->created_at->format("Y-m-d") }}</td>
+                            <td>{{ $booking->updated_at->format("Y-m-d") }}</td>
                         </tr>
                     @endforeach
                 @endif
@@ -63,6 +65,7 @@
         }
         $(document).ready(function() {
             var table = $('#table1').DataTable({
+                "pageLength": 25,
                 "columns": [{
                         "className": 'dt-control',
                         "orderable": false,
@@ -92,6 +95,9 @@
                     },
                     {
                         "data": "TVAC"
+                    },
+                    {
+                        "data": "reference"
                     },
                     {
                         "data": "created_at"

@@ -1,47 +1,47 @@
 @extends('template.index')
 
 @section('main')
-<main class="container p-2">
+    <main class="m-4">
 
-    <h1>Register</h1>
+        <h1>Register</h1>
 
-    <form action="{{ route('register') }}" method="post" id="main" novalidate>
-        @csrf
+        <form action="{{ route('register') }}" method="post" id="main" novalidate>
+            @csrf
 
-        <div class="form-group mb-3">
-            <label class="col-sm-2 control-label" for="name">Nom</label>
-            <div class="col-sm-5">
-                <input id="name" class="form-control" type="text" placeholder="Nom" name="name">
+            <div class="form-group mb-3">
+                <label class="col-sm-2 control-label" for="name">Nom</label>
+                <div class="col-sm-5">
+                    <input id="name" class="form-control" type="text" placeholder="Nom" name="name">
+                </div>
+                <div class="col-sm-5 messages">
+                </div>
             </div>
-            <div class="col-sm-5 messages">
+            <div class="form-group mb-3">
+                <label class="col-sm-2 control-label" for="email">Email</label>
+                <div class="col-sm-5">
+                    <input id="email" class="form-control" type="email" placeholder="Email" name="email">
+                </div>
+                <div class="col-sm-5 messages"></div>
             </div>
-        </div>
-        <div class="form-group mb-3">
-            <label class="col-sm-2 control-label" for="email">Email</label>
-            <div class="col-sm-5">
-                <input id="email" class="form-control" type="email" placeholder="Email" name="email">
+            <div class="form-group mb-3">
+                <label class="col-sm-2 control-label" for="password">Mot de passe</label>
+                <div class="col-sm-5">
+                    <input id="password" class="form-control" type="password" placeholder="Mot de passe" name="password">
+                </div>
+                <div class="col-sm-5 messages"></div>
             </div>
-            <div class="col-sm-5 messages"></div>
-        </div>
-        <div class="form-group mb-3">
-            <label class="col-sm-2 control-label" for="password">Mot de passe</label>
-            <div class="col-sm-5">
-              <input id="password" class="form-control" type="password" placeholder="Mot de passe" name="password">
+            <div class="form-group mb-3">
+                <label class="col-sm-2 control-label" for="password_confirmation">Confirmer le mot de passe</label>
+                <div class="col-sm-5">
+                    <input id="password_confirmation" class="form-control" type="password"
+                        placeholder="Confirmer le mot de passe" name="password_confirmation">
+                </div>
+                <div class="col-sm-5 messages"></div>
             </div>
-            <div class="col-sm-5 messages"></div>
-          </div>
-          <div class="form-group mb-3">
-            <label class="col-sm-2 control-label" for="password_confirmation">Confirmer le mot de passe</label>
-            <div class="col-sm-5">
-              <input id="password_confirmation" class="form-control" type="password" placeholder="Confirmer le mot de passe" name="password_confirmation">
-            </div>
-            <div class="col-sm-5 messages"></div>
-          </div>
-        <button type="submit" class="btn btn-primary me-3">Enregistrer</button>
-        <a href="users" class="btn btn-primary me-3">Annuler</a>
-
-    </form>
-</main>
+            <button type="submit" class="btn btn-primary me-3">Enregistrer</button>
+            <a href="users" class="btn btn-primary me-3">Annuler</a>
+        </form>
+    </main>
 @endsection
 
 @section('script')
@@ -119,7 +119,7 @@
                 _.each(form.querySelectorAll("input[name], select[name]"), function(input) {
                     // Since the errors can be null if no errors were found we need to handle
                     // that
-                    if(input.name != "_token" && input.name != "_method"){
+                    if (input.name != "_token" && input.name != "_method") {
                         showErrorsForInput(input, errors && errors[input.name]);
                     }
                 });
@@ -129,7 +129,7 @@
             function showErrorsForInput(input, errors) {
                 // This is the root of the input
                 var formGroup = closestParent(input.parentNode, "form-group");
-                    // Find where the error messages will be insert into
+                // Find where the error messages will be insert into
                 var messages = formGroup.querySelector(".messages");
                 // First we remove any old messages and resets the classes
                 resetFormGroup(formGroup);
@@ -186,5 +186,3 @@
         })();
     </script>
 @endsection
-
-

@@ -1,8 +1,8 @@
 @extends('template.index')
 
 @section('main')
-<main class="container p-2">
-    <form action="{{ route('params.update', ["octopusId" => $octopus->id, "zohoId" => $zoho->id]) }}" method="post">
+<main class="m-4">
+    <form action="{{ route('params.update', ["octopusId" => $octopus->id, "zohoId" => $zoho->id, "dolibarrId" => $dolibarr->id]) }}" method="post">
         @csrf
         @method('PATCH')
 
@@ -60,6 +60,16 @@
         <div class="mb-3">
             <label for="zEdition" class="form-label">Edition</label>
             <input type="text" class="form-control" name="zEdition" id="zEdition" value="{{$zoho->edition}}">
+        </div>
+
+        <h2>Dolibarr</h2>
+        <div class="mb-3">
+            <label for="dUrlWs" class="form-label">URL WS</label>
+            <input type="text" class="form-control" name="dUrlWs" id="dUrlWs" value="{{$dolibarr->urlWS}}">
+        </div>
+        <div class="mb-3">
+            <label for="dApiKey" class="form-label">API Key</label>
+            <input type="text" class="form-control" name="dApiKey" id="dApiKey" value="{{$dolibarr->apiKey}}">
         </div>
 
         <button type="submit" class="btn btn-primary me-3">Modifier</button>

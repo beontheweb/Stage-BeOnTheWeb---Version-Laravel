@@ -1,7 +1,7 @@
 @extends('template.index')
 
 @section('main')
-    <main class="container p-2">
+    <main class="m-4">
         <form action="{{ route('user.update', ['id' => $user->id]) }}" method="post" id="main" novalidate>
             @csrf
             @method('PATCH')
@@ -23,6 +23,21 @@
                 </div>
                 <div class="col-sm-5 messages"></div>
             </div>
+            <div class="form-group mb-3">
+                <label class="col-sm-2 control-label" for="password">Mot de passe</label>
+                <div class="col-sm-5">
+                    <input id="password" class="form-control" type="password" placeholder="Mot de passe" name="password">
+                </div>
+                <div class="col-sm-5 messages"></div>
+            </div>
+            <div class="form-group mb-3">
+                <label class="col-sm-2 control-label" for="password_confirmation">Confirmer le mot de passe</label>
+                <div class="col-sm-5">
+                    <input id="password_confirmation" class="form-control" type="password"
+                        placeholder="Confirmer le mot de passe" name="password_confirmation">
+                </div>
+                <div class="col-sm-5 messages"></div>
+            </div>
             <button type="submit" class="btn btn-primary me-3">Modifier</button>
             <a href="../users" class="btn btn-primary me-3">Annuler</a>
 
@@ -37,13 +52,13 @@
             var constraints = {
                 email: {
                     // Email is required
-                    presence: true,
+                    presence: false,
                     // and must be an email (duh)
                     email: true
                 },
                 name: {
                     // You need to pick a username too
-                    presence: true,
+                    presence: false,
                     format: {
                         // We don't allow anything that a-z and 0-9
                         pattern: "[a-z0-9]+",
@@ -52,6 +67,25 @@
                         message: "^Le nom ne peut contenir que a-z et 0-9"
                     }
                 },
+                password: {
+                    // Password is also required
+                    presence: false,
+                    // And must be at least 5 characters long
+                    format: {
+                        // We don't allow anything that a-z and 0-9
+                        pattern: "(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}",
+                        message: "^Le mot de passe doit contenir au min. 8 caractères, une minuscule, une majuscule et un caractère spécial."
+                    }
+                },
+                "password_confirmation": {
+                    // You need to confirm your password
+                    presence: false,
+                    // and it needs to be equal to the other password
+                    equality: {
+                        attribute: "password",
+                        message: "^The passwords does not match"
+                    }
+                }
             };
 
             // Hook up the form so we can prevent it from being posted

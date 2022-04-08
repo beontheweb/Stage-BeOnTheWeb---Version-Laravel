@@ -33,3 +33,7 @@
     -webkit-box-shadow: inset 0 1px 1px rgb(0 0 0 / 8%);
     box-shadow: inset 0 1px 1px rgb(0 0 0 / 8%);
 }
+
+td.currency {
+    text-align: right;
+}

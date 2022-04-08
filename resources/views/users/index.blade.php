@@ -2,7 +2,7 @@
 
 @section('main')
     <main>
-        <div class="container p-2">
+        <div class="ms-4">
             <h1>Users</h1>
             <a href="register" class="btn btn-primary mb-4">Enregistrer un nouvel utilisateur</a>
         </div>
@@ -15,7 +15,6 @@
                     <th scope="col">Date de création</th>
                     <th scope="col">Dernière update</th>
                     <th scope="col">Action</th>
-                    <th scope="col"></th>
                 </tr>
             </thead>
             <tbody>
@@ -25,12 +24,10 @@
                             <th scope="row">{{ $user->id }}</th>
                             <td>{{ $user->name }}</td>
                             <td>{{ $user->email }}</td>
-                            <td>{{ $user->created_at }}</td>
-                            <td>{{ $user->updated_at }}</td>
+                            <td>{{ $user->created_at->format("Y-m-d") }}</td>
+                            <td>{{ $user->updated_at->format("Y-m-d") }}</td>
                             <td>
-                                <a href="/user/{{ $user->id }}" class="btn btn-primary">Modifier</a>
-                            </td>
-                            <td>
+                                <a href="/user/{{ $user->id }}" class="btn btn-primary me-1">Modifier</a>
                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                     data-bs-target="#deleteModal" data-user-id="{{ $user->id }}">
                                     Supprimer
@@ -69,7 +66,9 @@
 @section('script')
     <script>
         $(document).ready(function() {
-            $('#table1').DataTable();
+            $('#table1').DataTable({
+                "pageLength": 25
+            });
         });
         
         $('#deleteModal').on('show.bs.modal', function(event) {

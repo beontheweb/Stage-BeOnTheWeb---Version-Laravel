@@ -21,4 +21,8 @@ class Booking extends Model
 
     protected $fillable = ['alphaNumericalNumber', 'documentNumber', 'amount', 'bookYearId', 'bookYearNumber', 'comment', 'currency', 'bookingDate', 'expiryDate', 'echangeRate', 'journalKey', 'paymentMethod', 'reference', 'relation_id'];
 
+    protected $casts = [
+        'bookingDate' => 'datetime',
+    ];
+
 }

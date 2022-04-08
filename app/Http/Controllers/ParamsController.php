@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Redirect;
 use App\Models\Octopus;
 use App\Models\Zoho;
+use App\Models\Dolibarr;
 
 class ParamsController extends Controller
 {
@@ -16,15 +17,18 @@ class ParamsController extends Controller
 
         $zoho = Zoho::all()[0];
 
+        $dolibarr = Dolibarr::all()[0];
+
         return View::make('params.index', 
             [
                 "octopus" => $octopus,
-                "zoho" => $zoho
+                "zoho" => $zoho,
+                "dolibarr" => $dolibarr
             ]
         );
     }
 
-    public function update($octopusId, $zohoId, Request $request){
+    public function update($octopusId, $zohoId, $dolibarrId, Request $request){
         $octopus = Octopus::find($octopusId);
         
         $octopus->urlWs = $request->oUrlWs ? $request->oUrlWs : $octopus->urlWs;
@@ -47,6 +51,13 @@ class ParamsController extends Controller
         $zoho->edition = $request->zEdition ? $request->zEdition : $zoho->edition;
 
         $zoho->save();
+
+        $dolibarr = Dolibarr::find($dolibarrId);
+
+        $dolibarr->urlWS = $request->dUrlWs ? $request->dUrlWs : $dolibarr->urlWS;
+        $dolibarr->apiKey = $request->dApiKey ? $request->dApiKey : $dolibarr->apiKey;
+
+        $dolibarr->save();
 
         return Redirect::route('params.index');
     }

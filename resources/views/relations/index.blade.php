@@ -2,7 +2,7 @@
 
 @section('main')
 <main>
-  <div class="container p-2">
+  <div class="ms-4">
     <h1>Relations</h1>
   </div>
     <table id="table1" class="display">
@@ -32,8 +32,8 @@
                         <td>{{$relation->telephone}}</td>
                         <td>{{$relation->email}}</td>
                         <td>{{$relation->street}}, {{$relation->postalCode}} {{$relation->city}} {{$relation->country}}</td>
-                        <td>{{$relation->created_at}}</td>
-                        <td>{{$relation->updated_at}}</td>
+                        <td>{{$relation->created_at->format("Y-m-d")}}</td>
+                        <td>{{$relation->updated_at->format("Y-m-d")}}</td>
                     </tr>
                 @endforeach
             @endif
@@ -45,7 +45,9 @@
 @section('script')
   <script>
       $(document).ready( function () {
-        $('#table1').DataTable();
+        $('#table1').DataTable({
+          "pageLength": 25
+        });
       } );
   </script>
 @endsection
