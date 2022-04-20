@@ -46,6 +46,14 @@
             <input type="text" class="form-control" name="zUrlWsAuth" id="zUrlWsAuth" value="{{$zoho->urlWsAuth}}">
         </div>
         <div class="mb-3">
+            <label for="zAppLinkName" class="form-label">App Link Name</label>
+            <input type="text" class="form-control" name="zAppLinkName" id="zAppLinkName" value="{{$zoho->appLinkName}}">
+        </div>
+        <div class="mb-3">
+            <label for="zAccountOwnerName" class="form-label">Account Owner Name</label>
+            <input type="text" class="form-control" name="zAccountOwnerName" id="zAccountOwnerName" value="{{$zoho->accountOwnerName}}">
+        </div>
+        <div class="mb-3">
             <label for="zClientId" class="form-label">Client Id</label>
             <input type="text" class="form-control" name="zClientId" id="zClientId" value="{{$zoho->clientId}}">
         </div>

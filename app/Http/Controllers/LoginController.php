@@ -12,7 +12,7 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
-    public function login()
+    public function login(Request $request)
     {
         $success = auth()->attempt([
             'email' => request('email'),
@@ -20,6 +20,7 @@ class LoginController extends Controller
         ], request()->has('remember'));
 
         if($success) {
+            $request->session()->regenerate();
             return redirect()->to(RouteServiceProvider::HOME);
         }
 
