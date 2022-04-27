@@ -15,6 +15,7 @@ class DashBoardController extends Controller
     public $octopusController;
     public $databaseController;
     public $zohoController;
+    public $dolibarrController;
 
     public function index(Request $request) {
 
@@ -118,6 +119,7 @@ class DashBoardController extends Controller
         $bookings = \App\Models\Booking::with("relation")->get();
         $bookingLines = \App\Models\BookingLine::all();
         $bookings = $bookingController->calculateTVA($bookings, $bookingLines);
+        $bookingLog = [];
         foreach ($bookings as $booking) {
             $hasRelation = $this->zohoController->getRelationByName($booking->relation->name);
             if($hasRelation["code"] == 3100){
@@ -129,9 +131,11 @@ class DashBoardController extends Controller
             $hasBooking = $this->zohoController->getBookingByNumber($booking);
             if($hasBooking["code"] == 3100){
                 $this->zohoController->createBooking($booking, $relationId);
+                $bookingLog[$booking->alphaNumericalNumber] = "Ajouté";
             }
             else{
                 $this->zohoController->updateBooking($hasBooking['data'][0]['ID'], $booking, $relationId);
+                $bookingLog[$booking->alphaNumericalNumber] = "Mise à jour";
             }
             foreach ($bookingLines as $line) {
                 if($line->booking_id == $booking->id){
@@ -144,6 +148,28 @@ class DashBoardController extends Controller
 
         return View::make('dashboard.index', 
             [
+             "modifiedBookings" => null,
+             "lastUpdated" => GeneralParam::get()->first()->lastUpdated,
+             "journals" => $journalKeys,
+             "bookingLog" => $bookingLog
+            ]
+        );
+    }
+
+    public function transferDoliOcto() {
+
+        $this->octopusController = new OctopusController();
+        $this->octopusController->octopus = Octopus::get()->first();
+        $journalKeys = $this->octopusController->getJournalKeys();
+
+        $this->dolibarrController = new DolibarrController();
+        $test = $this->dolibarrController->getData();
+        dd($test);
+
+
+        return View::make('dashboard.index', 
+            [
+             "zohoToken" => $this->zohoController->zoho->accessToken,
              "modifiedBookings" => null,
              "lastUpdated" => GeneralParam::get()->first()->lastUpdated,
              "journals" => $journalKeys
