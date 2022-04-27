@@ -47,6 +47,7 @@ class ParamsController extends Controller
         $zoho->urlWsAuth = $request->zUrlWsAuth ? $request->zUrlWsAuth : $zoho->urlWsAuth;
         $zoho->appLinkName = $request->zAppLinkName ? $request->zAppLinkName : $zoho->appLinkName;
         $zoho->accountOwnerName = $request->zAccountOwnerName ? $request->zAccountOwnerName : $zoho->accountOwnerName;
+        $zoho->redirectUri = $request->zRedirectUri ? $request->zRedirectUri : $zoho->redirectUri;
         $zoho-> clientId = $request->zClientId ? $request->zClientId : $zoho->clientId;
         $zoho->clientSecret = $request->zClientSecret ? $request->zClientSecret : $zoho->clientSecret;
         $zoho->scope = $request->zScope ? $request->zScope : $zoho->scope;

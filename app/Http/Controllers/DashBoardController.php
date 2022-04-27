@@ -3,30 +3,34 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\DB;
-use App\Models\Booking;
-use App\Models\BookingLine;
 use App\Models\GeneralParam;
-use App\Models\Relation;
 use App\Models\Octopus;
 use App\Models\Zoho;
+use App\Models\Relation;
 
 class DashBoardController extends Controller
 {
 
-    public $token;
-    public $dossierToken;
-    public $octopus;
-    public $zoho;
+    public $octopusController;
+    public $databaseController;
+    public $zohoController;
 
-    public function index() {
+    public function index(Request $request) {
 
-        $journalKeys = explode(",", Octopus::get()->first()->journalKeys);
-        foreach ($journalKeys as $key => $journalKey) {
-            $journalKeys[$key] = trim($journalKey);
+        if($request->code){
+            $this->zohoController = new ZohoController();
+            $this->zohoController->zoho = Zoho::get()->first();
+            $tokens = $this->zohoController->getToken($request->code);
+            //$this->zohoController->zoho->refreshToken = $tokens->refresh_token;
+            $this->zohoController->zoho->accessToken = $tokens["access_token"];
+            $this->zohoController->zoho->save();
         }
+
+        $this->octopusController = new OctopusController();
+        $this->octopusController->octopus = Octopus::get()->first();
+
+        $journalKeys = $this->octopusController->getJournalKeys();
 
         return View::make('dashboard.index', 
             [
@@ -39,14 +43,18 @@ class DashBoardController extends Controller
 
     public function updateDB(Request $request) {
         $completeBookings = [];
-        $journalKeys = $request->get("journals");
-        $this->octopus = Octopus::get()->first();
-        $this->zoho = Zoho::get()->first();
-        $this->token = $this->getToken();
-        $this->dossierToken = $this->getDossierToken();
-        $params = GeneralParam::get()->first();
 
+        //Récupère les paramètres du formulaire
+        $journalKeys = $request->get("journals");
         $timestamp = $request->timestamp . " 00:00:00.000";
+
+        $this->octopusController = new OctopusController();
+        $this->octopusController->octopus = Octopus::get()->first();
+        $this->octopusController->token = $this->octopusController->getToken();
+        $this->octopusController->dossierToken = $this->octopusController->getDossierToken();
+
+        $this->databaseController = new DatabaseController();
+        $params = GeneralParam::get()->first();
 
         //Pour chaque clé de journal, appelle l'api octopus pour récupérer les bookings correspondant et mets à jour la base de donnée
         if ($journalKeys) {
@@ -54,9 +62,9 @@ class DashBoardController extends Controller
                 //Retire les espaces
                 $journalKey = trim($journalKey);
                 
-                $bookings = $this->getBookings($journalKey, $timestamp);
+                $bookings = $this->octopusController->getBookings($journalKey, $timestamp);
                 if(!isset($bookings["technicalInfo"])){
-                    $this->fillDB($bookings);
+                    $this->databaseController->fillDB($bookings, $this->octopusController);
                 }
                 //Juste pour le débuggage
                 array_push($completeBookings, $bookings);
@@ -66,10 +74,7 @@ class DashBoardController extends Controller
             $params->save();
         }
 
-        $journalKeys = explode(",", $this->octopus->journalKeys);
-        foreach ($journalKeys as $key => $journalKey) {
-            $journalKeys[$key] = trim($journalKey);
-        }
+        $journalKeys = $this->octopusController->getJournalKeys();
 
         return View::make('dashboard.index', 
             [
@@ -80,225 +85,69 @@ class DashBoardController extends Controller
         );
     }
 
-    public function getToken() {
-        // URL
-        $apiURL = $this->octopus->urlWs.'/authentication';
+    public function refreshZohoToken() {
 
-        // POST Data
-        $postInput = [
-            'user' => $this->octopus->user,
-            'password' => $this->octopus->password
-        ];
-  
-        // Headers
-        $headers = [
-            'Accept' => 'application/json',
-            'softwareHouseUuid' => $this->octopus->softwareHouseUuid,
-            'Content-Type' => 'application/json'
-        ];
-  
-        $response = Http::withHeaders($headers)->post($apiURL, $postInput);
-  
-        $responseBody = json_decode($response->getBody(), true);
+        $this->octopusController = new OctopusController();
+        $this->octopusController->octopus = Octopus::get()->first();
+        $journalKeys = $this->octopusController->getJournalKeys();
 
-        return $responseBody["token"];
-    }
+        $this->zohoController = new ZohoController();
+        $this->zohoController->zoho = Zoho::get()->first();
+        $this->zohoController->zoho->accessToken = $this->zohoController->refreshToken();
 
-    public function getDossierToken() {
-        // URL
-        $apiURL = $this->octopus->urlWs.'/dossiers?dossierId='.$this->octopus->idDossier;
-  
-        // Headers
-        $headers = [
-            'Accept' => 'application/json',
-            'token' => $this->token,
-        ];
-  
-        $response = Http::withHeaders($headers)->post($apiURL);
-  
-        $responseBody = json_decode($response->getBody(), true);
 
-        return $responseBody["Dossiertoken"];
-    }
-
-    public function getBookings($journalKey, $timestamp) {
-
-        // URL
-        $apiURL = $this->octopus->urlWs.'/dossiers/'.$this->octopus->idDossier.'/buysellbookings/modified?bookyearId='.$this->octopus->bookYearKey.'&journalKey='.$journalKey.'&modifiedTimeStamp='.$timestamp;
-  
-        // Headers
-        $headers = [
-            'dossierToken' => $this->dossierToken
-        ];
-  
-        $response = Http::withHeaders($headers)->get($apiURL);
-  
-        $responseBody = json_decode($response->getBody(), true);
-
-        return $responseBody;
-    }
-
-    public function getRelation($relationId) {
-
-        // URL
-        $apiURL = $this->octopus->urlWs.'/dossiers/'.$this->octopus->idDossier.'/relations?relationId='.$relationId;
-  
-        // Headers
-        $headers = [
-            'dossierToken' => $this->dossierToken
-        ];
-  
-        $response = Http::withHeaders($headers)->get($apiURL);
-  
-        $responseBody = json_decode($response->getBody(), true);
-
-        return $responseBody;
-    }
-
-    public function getVatBasePercentage($tvaCodeKey){
-        // URL
-        $apiURL = $this->octopus->urlWs.'/dossiers/'.$this->octopus->idDossier.'/vatcodes';
-  
-        // Headers
-        $headers = [
-            'dossierToken' => $this->dossierToken
-        ];
-  
-        $response = Http::withHeaders($headers)->get($apiURL);
-  
-        $responseBody = json_decode($response->getBody(), true);
-
-        //Cherche dans le tableau reçu pour la bonne valeur
-        foreach ($responseBody as $value) {
-            if($value["code"] == $tvaCodeKey){
-                return $value["basePercentage"];
-            }
-        }
-
-        return 21.0;
-
-    }
-
-    //Vide les tables de donnée. Seulement utilsé pour des tests
-    public function truncate(){
-        DB::table('bookings')->truncate();
-        DB::table('booking_lines')->truncate();
-    }
-
-    public function fillDB($array){
-
-        foreach ($array as $value) {
-            $this->createBooking($value);
-        }
-    }
-
-    //Crée ou update un booking si alphaNumericalNumber existe déjà
-    public function createBooking($value){
-
-            $alphaNumericalNumber = substr($value["bookyearPeriodeNr"], 0, 4)."-".$value["journalKey"]."-".sprintf("%03d", $value["documentSequenceNr"]);
-
-            if (Relation::where('externalID', $value["relationIdentificationServiceData"]["relationKey"]["id"])->exists()) {
-                $relationId = Relation::where('externalID', $value["relationIdentificationServiceData"]["relationKey"]["id"])->pluck('id')[0];
-             }
-             else{
-                $relationId = $this->createRelation($value["relationIdentificationServiceData"]["relationKey"]["id"]);
-             }
-
-            $booking = Booking::updateOrCreate(
-                ['alphaNumericalNumber' => $alphaNumericalNumber],
-                [
-                    'documentNumber' => $value["documentSequenceNr"],
-                    'amount' => $value["amount"],
-                    'bookYearId' => $value["bookyearKey"]["id"],
-                    'bookYearNumber' => $value["bookyearPeriodeNr"],
-                    'comment' => $value["comment"],
-                    'currency' => $value["currencyCode"],
-                    'bookingDate' => $value["documentDate"],
-                    'expiryDate' => $value["expiryDate"],
-                    'echangeRate' => $value["exchangeRate"],
-                    'journalKey' => $value["journalKey"],
-                    'paymentMethod' => $value["paymentMethod"],
-                    'reference' => $value["reference"],
-                    'relation_id' => $relationId
-                ]
-            );
-
-            foreach ($value["bookingLines"] as $key => $line) {
-                $this->createBookingLine($line, $booking->id, $key+1, $alphaNumericalNumber);
-            }
-
-            return $booking->id;
-    }
-
-    //Crée ou update une booking line si alphaNumericalNumber existe déjà
-    public function createBookingLine($value, $id, $lineID, $alphaNumericalNumber){
-
-        $alphaNumericalNumber = $alphaNumericalNumber."-".sprintf("%02d", $lineID);
-
-        BookingLine::updateOrCreate(
-            ['alphaNumericalNumber' => $alphaNumericalNumber],
+        return View::make('dashboard.index', 
             [
-                'accountKey' => $value["accountKey"],
-                'baseAmount' => $value["baseAmount"],
-                'vatAmount' => $value["vatAmount"],
-                'vatCodeKey' => $value["vatCodeKey"],
-                'vatPercentage' => array_key_exists("vatRecupPercentage", $value) ? $value["vatRecupPercentage"] : 100,
-                'vatBasePercentage' => $this->getVatBasePercentage($value["vatCodeKey"]),
-                'comment' => $value["comment"],
-                'booking_id' => $id,
+             "zohoToken" => $this->zohoController->zoho->accessToken,
+             "modifiedBookings" => null,
+             "lastUpdated" => GeneralParam::get()->first()->lastUpdated,
+             "journals" => $journalKeys
             ]
         );
-
     }
+    
+    public function sendDataZoho() {
 
-    //Crée une nouvelle relation
-    public function createRelation($id){
+        $this->octopusController = new OctopusController();
+        $this->octopusController->octopus = Octopus::get()->first();
+        $journalKeys = $this->octopusController->getJournalKeys();
 
-            $value = $this->getRelation($id);
-            //Renvoie un tableau dans un tableau, il faut sélectionner le premier élément
-            $value = $value[0];
+        $this->zohoController = new ZohoController();
+        $this->zohoController->zoho = Zoho::get()->first();
+        $bookingController = new BookingController();
+        $bookings = \App\Models\Booking::with("relation")->get();
+        $bookingLines = \App\Models\BookingLine::all();
+        $bookings = $bookingController->calculateTVA($bookings, $bookingLines);
+        foreach ($bookings as $booking) {
+            $hasRelation = $this->zohoController->getRelationByName($booking->relation->name);
+            if($hasRelation["code"] == 3100){
+                $relationId = $this->zohoController->createRelation(Relation::where('name', $booking->relation->name)->first())["data"]["ID"];
+            }
+            else{
+                $relationId = $hasRelation['data'][0]['ID'];
+            }
+            $hasBooking = $this->zohoController->getBookingByNumber($booking);
+            if($hasBooking["code"] == 3100){
+                $this->zohoController->createBooking($booking, $relationId);
+            }
+            else{
+                $this->zohoController->updateBooking($hasBooking['data'][0]['ID'], $booking, $relationId);
+            }
+            foreach ($bookingLines as $line) {
+                if($line->booking_id == $booking->id){
+                    $line->delete();
+                }
+            }
+            $booking->delete();
+        }
 
-            $relation = new Relation();
- 
-            $relation->externalID = $id;
-            $relation->name = $value["name"];
-            $relation->firstName = $value["firstName"];
-            $relation->contactPerson = $value["contactPerson"];
-            $relation->telephone = $value["telephone"];
-            $relation->mobile = $value["mobile"];
-            $relation->fax = $value["fax"];
-            $relation->email = $value["email"];
-            $relation->active = $value["active"];
-            $relation->bankAccount = $value["bankAccountNr"];
-            $relation->bicCode = $value["bicCode"];
-            $relation->TVAType = $value["vatType"];
-            $relation->TVANumber = $value["vatNr"];
-            $relation->ibanAccount = $value["ibanAccountNr"];
-            $relation->currency = $value["currencyCode"];
-            $relation->corporationType = $value["corporationType"];
-            $relation->financialDiscount = $value["financialDiscount"];
-            $relation->defaultSupplier = 0;
-            $relation->defaultClient = 0;
-            $relation->hasClient = $value["client"];
-            $relation->hasSupplier = $value["supplier"];
-            $relation->expirationDays = $value["expirationDays"];
-            $relation->expirationType = $value["expirationType"];
-            $relation->country = $value["country"];
-            $relation->city = array_key_exists("city", $value) ? $value["city"] : "";
-            $relation->postalCode = $value["postalCode"];
-            $relation->street = $value["streetAndNr"];
-            $relation->deliveryCountry = $value["deliveryCountry"];
-            $relation->deliveryCity = array_key_exists("deliveryCity", $value) ? $value["deliveryCity"] : "";
-            $relation->deliveryPostalCode = $value["deliveryPostalCode"];
-            $relation->deliveryStreet = $value["deliveryStreetAndNr"];
-            $relation->remarks = $value["remarks"];
-            $relation->sddActive = $value["sddActive"];
-            $relation->sddMandateType = $value["sddMandateType"];
-            $relation->sddSeqtype = $value["sddSeqtype"];
-            $relation->searchField1 = $value["searchField1"];
-            $relation->searchField2 = $value["searchField2"];
- 
-            $relation->save();
-            return $relation->id;
+
+        return View::make('dashboard.index', 
+            [
+             "modifiedBookings" => null,
+             "lastUpdated" => GeneralParam::get()->first()->lastUpdated,
+             "journals" => $journalKeys
+            ]
+        );
     }
 }

@@ -54,6 +54,10 @@
             <input type="text" class="form-control" name="zAccountOwnerName" id="zAccountOwnerName" value="{{$zoho->accountOwnerName}}">
         </div>
         <div class="mb-3">
+            <label for="zRedirectUri" class="form-label">Redirect URI</label>
+            <input type="text" class="form-control" name="zRedirectUri" id="zRedirectUri" value="{{$zoho->redirectUri}}">
+        </div>
+        <div class="mb-3">
             <label for="zClientId" class="form-label">Client Id</label>
             <input type="text" class="form-control" name="zClientId" id="zClientId" value="{{$zoho->clientId}}">
         </div>
