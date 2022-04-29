@@ -29,7 +29,7 @@ class DashBoardController extends Controller
         }
 
         $this->octopusController = new OctopusController();
-        $this->octopusController->octopus = Octopus::get()->first();
+        $this->octopusController->octopus = Octopus::where("action", "receive")->get()->first();
 
         $journalKeys = $this->octopusController->getJournalKeys();
 
@@ -50,7 +50,7 @@ class DashBoardController extends Controller
         $timestamp = $request->timestamp . " 00:00:00.000";
 
         $this->octopusController = new OctopusController();
-        $this->octopusController->octopus = Octopus::get()->first();
+        $this->octopusController->octopus = Octopus::where("action", "receive")->get()->first();
         $this->octopusController->token = $this->octopusController->getToken();
         $this->octopusController->dossierToken = $this->octopusController->getDossierToken();
 
@@ -89,7 +89,7 @@ class DashBoardController extends Controller
     public function refreshZohoToken() {
 
         $this->octopusController = new OctopusController();
-        $this->octopusController->octopus = Octopus::get()->first();
+        $this->octopusController->octopus = Octopus::where("action", "receive")->get()->first();
         $journalKeys = $this->octopusController->getJournalKeys();
 
         $this->zohoController = new ZohoController();
@@ -110,7 +110,7 @@ class DashBoardController extends Controller
     public function sendDataZoho() {
 
         $this->octopusController = new OctopusController();
-        $this->octopusController->octopus = Octopus::get()->first();
+        $this->octopusController->octopus = Octopus::where("action", "receive")->get()->first();
         $journalKeys = $this->octopusController->getJournalKeys();
 
         $this->zohoController = new ZohoController();
@@ -159,17 +159,34 @@ class DashBoardController extends Controller
     public function transferDoliOcto() {
 
         $this->octopusController = new OctopusController();
-        $this->octopusController->octopus = Octopus::get()->first();
+        $this->octopusController->octopus = Octopus::where("action", "receive")->get()->first();
+        $this->octopusController->token = $this->octopusController->getToken();
+        $this->octopusController->dossierToken = $this->octopusController->getDossierToken();
         $journalKeys = $this->octopusController->getJournalKeys();
+        $bookings = [];
 
         $this->dolibarrController = new DolibarrController();
-        $test = $this->dolibarrController->getData();
-        dd($test);
+        $dolibarrBookings = $this->dolibarrController->getBookings();
+        foreach ($dolibarrBookings as $dolibarrBooking) {
+            if($dolibarrBooking["brouillon"] == null){
+                array_push($bookings, $dolibarrBooking);
+            }
+        }
+
+        foreach ($bookings as $booking) {
+            $relation = $this->dolibarrController->getRelationById($booking["socid"]);
+            if(isset($this->octopusController->getRelationByName($relation["name"])["errorCode"])){
+                $this->octopusController->createRelation($relation);
+            }
+            $relationId = $this->octopusController->getRelationByName($relation["name"])[0]["relationIdentificationServiceData"]["relationKey"]["id"];
+            $externalRealtionId = $this->octopusController->getRelationByName($relation["name"])[0]["relationIdentificationServiceData"]["externalRelationId"];
+
+            $this->octopusController->createBooking($booking, $relationId, $externalRealtionId);
+        }
 
 
         return View::make('dashboard.index', 
             [
-             "zohoToken" => $this->zohoController->zoho->accessToken,
              "modifiedBookings" => null,
              "lastUpdated" => GeneralParam::get()->first()->lastUpdated,
              "journals" => $journalKeys

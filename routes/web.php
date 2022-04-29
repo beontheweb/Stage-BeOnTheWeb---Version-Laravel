@@ -30,7 +30,7 @@ Route::patch("/user/{id}", [\App\Http\Controllers\UserController::class, "update
 Route::delete("/users/{id}", [\App\Http\Controllers\UserController::class, "delete"])->middleware('auth')->name("users.delete");
 
 Route::get("/params", [\App\Http\Controllers\ParamsController::class, "index"])->middleware('auth')->name("params.index");
-Route::patch("/params/{octopusId}-{zohoId}-{dolibarrId}", [\App\Http\Controllers\ParamsController::class, "update"])->middleware('auth')->name("params.update");
+Route::patch("/params", [\App\Http\Controllers\ParamsController::class, "update"])->middleware('auth')->name("params.update");
 
 Route::get('/register', [\App\Http\Controllers\RegisterController::class, 'show'])->middleware('auth')->name('register');
 Route::post('/register', [\App\Http\Controllers\RegisterController::class, 'register'])->middleware('auth')->name('register');

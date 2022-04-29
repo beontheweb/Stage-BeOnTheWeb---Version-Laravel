@@ -86,6 +86,23 @@ class OctopusController extends Controller
         return $responseBody;
     }
 
+    public function getRelationByName($name) {
+
+        // URL
+        $apiURL = $this->octopus->urlWs.'/dossiers/'.$this->octopus->idDossier.'/relations?name='.$name;
+  
+        // Headers
+        $headers = [
+            'dossierToken' => $this->dossierToken
+        ];
+  
+        $response = Http::withHeaders($headers)->get($apiURL);
+  
+        $responseBody = json_decode($response->getBody(), true);
+
+        return $responseBody;
+    }
+
     public function getVatBasePercentage($tvaCodeKey){
         // URL
         $apiURL = $this->octopus->urlWs.'/dossiers/'.$this->octopus->idDossier.'/vatcodes';
@@ -110,6 +127,30 @@ class OctopusController extends Controller
 
     }
 
+    public function getVatCodeKey($tvaPercentage){
+        // URL
+        $apiURL = $this->octopus->urlWs.'/dossiers/'.$this->octopus->idDossier.'/vatcodes';
+  
+        // Headers
+        $headers = [
+            'dossierToken' => $this->dossierToken
+        ];
+  
+        $response = Http::withHeaders($headers)->get($apiURL);
+  
+        $responseBody = json_decode($response->getBody(), true);
+
+        //Cherche dans le tableau reçu pour la bonne valeur
+        foreach ($responseBody as $value) {
+            if($value["basePercentage"] == $tvaPercentage){
+                return $value["code"];
+            }
+        }
+
+        return "D21";
+
+    }
+
     public function getJournalKeys(){
         $journalKeys = explode(",", $this->octopus->journalKeys);
         foreach ($journalKeys as $key => $journalKey) {
@@ -117,5 +158,101 @@ class OctopusController extends Controller
         }
 
         return $journalKeys;
+    }
+
+    public function createBooking($booking, $relationId, $externalRealtionId) {
+
+        $lastId = 1;
+        foreach ($this->getBookings("V1", "01-01-1980 00:00:00.000") as $el) {
+            $lastId = $el["documentSequenceNr"] > $lastId ? $el["documentSequenceNr"] : $lastId;
+        }
+
+        // URL
+        $apiURL = $this->octopus->urlWs.'/dossiers/'.$this->octopus->idDossier.'/buysellbookings';
+
+        // POST Data
+        $postInput = [
+            'buySellBookingServiceData' => [
+                'bookyearKey' => [
+                    'id' => $this->octopus->bookYearKey
+                ],
+                'journalKey' => 'V1',
+                'documentSequenceNr' => $lastId+1,
+                'relationIdentificationServiceData' => [
+                    'relationKey' => [
+                        'id' => $relationId
+                    ],
+                    'externalRelationId' => $externalRealtionId
+                ],
+                //2016 pour l'instant, date("Y", $booking["date_creation"]) après
+                'bookyearPeriodeNr' => "20160".ceil(date("m", $booking["date_creation"])/3),
+                'documentDate' => date("Y-m-d", $booking["date_creation"]),
+                'expiryDate' => date("Y-m-d", $booking["date"]),
+                'comment' => "",
+                'reference'=> $booking["ref"],
+                'amount' => (double)$booking["total_ttc"],
+                'currencyCode' => $booking["multicurrency_code"],
+                'exchangeRate' => 1.0,
+                'bookingLines' => [],
+                'paymentMethod' => 1
+            ]
+        ];
+
+        foreach ($booking["lines"] as $key => $line) {
+            $octoLine = [
+                'accountKey' => $line["ref"] ?? $this->octopus->accountKeyDefault,
+                'baseAmount' => (double)$line["total_ht"],
+                'vatCodeKey' => (string)(int)$line["tva_tx"],
+                'vatAmount' => (double)$line["total_tva"],
+                'comment' => $line["description"]
+            ];
+            $postInput['buySellBookingServiceData']['bookingLines'][$key] = $octoLine;
+        };
+  
+        // Headers
+        $headers = [
+            'accept' => '*/*',
+            'dossierToken' => $this->dossierToken,
+            'Content-Type' => 'application/json'
+        ];
+  
+        $response = Http::withHeaders($headers)->post($apiURL, $postInput);
+  
+        $responseBody = json_decode($response->getBody(), true);
+
+        return $responseBody;
+    }
+
+    public function createRelation($relation) {
+
+        // URL
+        $apiURL = $this->octopus->urlWs.'/dossiers/'.$this->octopus->idDossier.'/relations';
+
+        // POST Data
+        $postInput = [
+            'name' => $relation["name"],
+            'client' => $relation["client"] == 1 ? true : false,
+            'streetAndNr' => $relation["address"],
+            'postalCode' => $relation["zip"],
+            'city' => $relation["town"],
+            'country' => $relation["country_code"],
+            'telephone' => $relation["phone"],
+            'email'=> $relation["email"],
+            'fax' => $relation["fax"],
+            'url' => $relation["url"]
+        ];
+  
+        // Headers
+        $headers = [
+            'accept' => '*/*',
+            'dossierToken' => $this->dossierToken,
+            'Content-Type' => 'application/json'
+        ];
+  
+        $response = Http::withHeaders($headers)->put($apiURL, $postInput);
+  
+        $responseBody = json_decode($response->getBody(), true);
+
+        return $responseBody;
     }
 }

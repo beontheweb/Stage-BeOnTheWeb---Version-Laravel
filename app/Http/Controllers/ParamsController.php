@@ -13,35 +13,51 @@ class ParamsController extends Controller
 {
     public function index() {
 
-        $octopus = Octopus::all()[0];
+        $octoReceive = Octopus::where("action", "receive")->get()->first();
+        $octoSend = Octopus::where("action", "send")->get()->first();
 
-        $zoho = Zoho::all()[0];
+        $zoho = Zoho::get()->first();
 
-        $dolibarr = Dolibarr::all()[0];
+        $dolibarr = Dolibarr::get()->first();
 
         return View::make('params.index', 
             [
-                "octopus" => $octopus,
+                "octoReceive" => $octoReceive,
+                "octoSend" => $octoSend,
                 "zoho" => $zoho,
                 "dolibarr" => $dolibarr
             ]
         );
     }
 
-    public function update($octopusId, $zohoId, $dolibarrId, Request $request){
-        $octopus = Octopus::find($octopusId);
+    public function update(Request $request){
+        $octoReceive = Octopus::where("action", "receive")->get()->first();
         
-        $octopus->urlWs = $request->oUrlWs ? $request->oUrlWs : $octopus->urlWs;
-        $octopus->softwareHouseUuid = $request->oUuid ? $request->oUuid : $octopus->softwareHouseUuid;
-        $octopus->user = $request->oUser ? $request->oUser : $octopus->user;
-        $octopus->password = $request->oPassword ? $request->oPassword : $octopus->password;
-        $octopus->idDossier = $request->oIdDossier ? $request->oIdDossier : $octopus->idDossier;
-        $octopus->bookYearKey = $request->oBookyearKey ? $request->oBookyearKey : $octopus->bookYearKey;
-        $octopus->journalKeys = $request->oJournalKeys ? $request->oJournalKeys : $octopus->journalKeys;
+        $octoReceive->urlWs = $request->orUrlWs ? $request->orUrlWs : $octoReceive->urlWs;
+        $octoReceive->softwareHouseUuid = $request->orUuid ? $request->orUuid : $octoReceive->softwareHouseUuid;
+        $octoReceive->user = $request->orUser ? $request->orUser : $octoReceive->user;
+        $octoReceive->password = $request->orPassword ? $request->orPassword : $octoReceive->password;
+        $octoReceive->idDossier = $request->orIdDossier ? $request->orIdDossier : $octoReceive->idDossier;
+        $octoReceive->bookYearKey = $request->orBookyearKey ? $request->orBookyearKey : $octoReceive->bookYearKey;
+        $octoReceive->journalKeys = $request->orJournalKeys ? $request->orJournalKeys : $octoReceive->journalKeys;
+        $octoReceive->accountKeyDefault = $request->orAccountKey ? $request->orAccountKey : $octoReceive->accountKeyDefault;
 
-        $octopus->save();
+        $octoReceive->save();
 
-        $zoho = Zoho::find($zohoId);
+        $octoSend = Octopus::where("action", "send")->get()->first();
+        
+        $octoSend->urlWs = $request->osUrlWs ? $request->osUrlWs : $octoSend->urlWs;
+        $octoSend->softwareHouseUuid = $request->osUuid ? $request->osUuid : $octoSend->softwareHouseUuid;
+        $octoSend->user = $request->osUser ? $request->osUser : $octoSend->user;
+        $octoSend->password = $request->osPassword ? $request->osPassword : $octoSend->password;
+        $octoSend->idDossier = $request->osIdDossier ? $request->osIdDossier : $octoSend->idDossier;
+        $octoSend->bookYearKey = $request->osBookyearKey ? $request->osBookyearKey : $octoSend->bookYearKey;
+        $octoSend->journalKeys = $request->osJournalKeys ? $request->osJournalKeys : $octoSend->journalKeys;
+        $octoSend->accountKeyDefault = $request->osAccountKey ? $request->osAccountKey : $octoSend->accountKeyDefault;
+
+        $octoSend->save();
+
+        $zoho = Zoho::get()->first();
 
         $zoho->urlWsCreator = $request->zUrlWsCreator ? $request->zUrlWsCreator : $zoho->urlWsCreator;
         $zoho->urlWsAuth = $request->zUrlWsAuth ? $request->zUrlWsAuth : $zoho->urlWsAuth;
@@ -55,7 +71,7 @@ class ParamsController extends Controller
 
         $zoho->save();
 
-        $dolibarr = Dolibarr::find($dolibarrId);
+        $dolibarr = Dolibarr::get()->first();
 
         $dolibarr->urlWS = $request->dUrlWs ? $request->dUrlWs : $dolibarr->urlWS;
         $dolibarr->apiKey = $request->dApiKey ? $request->dApiKey : $dolibarr->apiKey;

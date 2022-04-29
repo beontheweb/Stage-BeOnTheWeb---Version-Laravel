@@ -2,38 +2,76 @@
 
 @section('main')
 <main class="m-4">
-    <form action="{{ route('params.update', ["octopusId" => $octopus->id, "zohoId" => $zoho->id, "dolibarrId" => $dolibarr->id]) }}" method="post">
+    <form action="{{ route('params.update') }}" method="post">
         @csrf
         @method('PATCH')
 
-        <h2>Octopus</h2>
+        <h2>Octopus - Réception des factures</h2>
         <div class="mb-3">
-            <label for="oUrlWs" class="form-label">URL WS</label>
-            <input type="text" class="form-control" name="oUrlWs" id="oUrlWs" value="{{$octopus->urlWs}}">
+            <label for="orUrlWs" class="form-label">URL WS</label>
+            <input type="text" class="form-control" name="orUrlWs" id="orUrlWs" value="{{$octoReceive->urlWs}}">
         </div>
         <div class="mb-3">
-            <label for="oUuid" class="form-label">Software House Uuid</label>
-            <input type="text" class="form-control" name="oUuid" id="oUuid" value="{{$octopus->softwareHouseUuid}}">
+            <label for="orUuid" class="form-label">Software House Uuid</label>
+            <input type="text" class="form-control" name="orUuid" id="orUuid" value="{{$octoReceive->softwareHouseUuid}}">
         </div>
         <div class="mb-3">
-            <label for="oUser" class="form-label">User</label>
-            <input type="text" class="form-control" name="oUser" id="oUser" value="{{$octopus->user}}">
+            <label for="orUser" class="form-label">User</label>
+            <input type="text" class="form-control" name="orUser" id="orUser" value="{{$octoReceive->user}}">
         </div>
         <div class="mb-3">
-            <label for="oPassword" class="form-label">Password</label>
-            <input type="text" class="form-control" name="oPassword" id="oPassword" value="{{$octopus->password}}">
+            <label for="orPassword" class="form-label">Password</label>
+            <input type="text" class="form-control" name="orPassword" id="orPassword" value="{{$octoReceive->password}}">
         </div>
         <div class="mb-3">
-            <label for="oIdDossier" class="form-label">ID Dossier</label>
-            <input type="text" class="form-control" name="oIdDossier" id="oIdDossier" value="{{$octopus->idDossier}}">
+            <label for="orIdDossier" class="form-label">ID Dossier</label>
+            <input type="text" class="form-control" name="orIdDossier" id="orIdDossier" value="{{$octoReceive->idDossier}}">
         </div>
         <div class="mb-3">
-            <label for="oBookyearKey" class="form-label">Bookyear Key</label>
-            <input type="text" class="form-control" name="oBookyearKey" id="oBookyearKey" value="{{$octopus->bookYearKey}}">
+            <label for="orBookyearKey" class="form-label">Bookyear Key</label>
+            <input type="text" class="form-control" name="orBookyearKey" id="orBookyearKey" value="{{$octoReceive->bookYearKey}}">
         </div>
         <div class="mb-3">
-            <label for="oJournalKeys" class="form-label">Journals' Keys (A1, V1, ...)</label>
-            <input type="text" class="form-control" name="oJournalKeys" id="oJournalKeys" value="{{$octopus->journalKeys}}">
+            <label for="orJournalKeys" class="form-label">Journals' Keys (A1, V1, ...)</label>
+            <input type="text" class="form-control" name="orJournalKeys" id="orJournalKeys" value="{{$octoReceive->journalKeys}}">
+        </div>
+        <div class="mb-3">
+            <label for="orAccountKey" class="form-label">Default Account Key</label>
+            <input type="text" class="form-control" name="orAccountKey" id="orAccountKey" value="{{$octoReceive->accountKeyDefault}}">
+        </div>
+
+        <h2>Octopus - Envoi des factures de vente</h2>
+        <div class="mb-3">
+            <label for="osUrlWs" class="form-label">URL WS</label>
+            <input type="text" class="form-control" name="osUrlWs" id="osUrlWs" value="{{$octoSend->urlWs}}">
+        </div>
+        <div class="mb-3">
+            <label for="osUuid" class="form-label">Software House Uuid</label>
+            <input type="text" class="form-control" name="osUuid" id="osUuid" value="{{$octoSend->softwareHouseUuid}}">
+        </div>
+        <div class="mb-3">
+            <label for="osUser" class="form-label">User</label>
+            <input type="text" class="form-control" name="osUser" id="osUser" value="{{$octoSend->user}}">
+        </div>
+        <div class="mb-3">
+            <label for="osPassword" class="form-label">Password</label>
+            <input type="text" class="form-control" name="osPassword" id="osPassword" value="{{$octoSend->password}}">
+        </div>
+        <div class="mb-3">
+            <label for="osIdDossier" class="form-label">ID Dossier</label>
+            <input type="text" class="form-control" name="osIdDossier" id="osIdDossier" value="{{$octoSend->idDossier}}">
+        </div>
+        <div class="mb-3">
+            <label for="osBookyearKey" class="form-label">Bookyear Key</label>
+            <input type="text" class="form-control" name="osBookyearKey" id="osBookyearKey" value="{{$octoSend->bookYearKey}}">
+        </div>
+        <div class="mb-3">
+            <label for="osJournalKeys" class="form-label">Journals' Keys (A1, V1, ...)</label>
+            <input type="text" class="form-control" name="osJournalKeys" id="osJournalKeys" value="{{$octoSend->journalKeys}}">
+        </div>
+        <div class="mb-3">
+            <label for="osAccountKey" class="form-label">Default Account Key</label>
+            <input type="text" class="form-control" name="osAccountKey" id="osAccountKey" value="{{$octoSend->accountKeyDefault}}">
         </div>
 
         <h2>Zoho</h2>
