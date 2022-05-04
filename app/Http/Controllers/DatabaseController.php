@@ -23,17 +23,18 @@ class DatabaseController extends Controller
 
         foreach ($array as $value) {
             $this->octopusController = $octopusController;
-            $this->createBooking($value);
+            $relationName = $this->octopusController->getRelation($value["relationIdentificationServiceData"]["relationKey"]["id"])[0]["name"];
+            $this->createBooking($value, $relationName);
         }
     }
 
     //Crée ou update un booking si alphaNumericalNumber existe déjà
-    public function createBooking($value){
+    public function createBooking($value, $relationName){
 
             $alphaNumericalNumber = substr($value["bookyearPeriodeNr"], 0, 4)."-".$value["journalKey"]."-".sprintf("%03d", $value["documentSequenceNr"]);
 
-            if (Relation::where('externalID', $value["relationIdentificationServiceData"]["relationKey"]["id"])->exists()) {
-                $relationId = Relation::where('externalID', $value["relationIdentificationServiceData"]["relationKey"]["id"])->pluck('id')[0];
+            if (Relation::where('name', $relationName)->exists()) {
+                $relationId = Relation::where('name', $relationName)->pluck('id')[0];
              }
              else{
                 $relationId = $this->createRelation($value["relationIdentificationServiceData"]["relationKey"]["id"]);
@@ -46,7 +47,7 @@ class DatabaseController extends Controller
                     'amount' => $value["amount"],
                     'bookYearId' => $value["bookyearKey"]["id"],
                     'bookYearNumber' => $value["bookyearPeriodeNr"],
-                    'comment' => $value["comment"],
+                    'comment' => $value["comment"] ?? "",
                     'currency' => $value["currencyCode"],
                     'bookingDate' => $value["documentDate"],
                     'expiryDate' => $value["expiryDate"],

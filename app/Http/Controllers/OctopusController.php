@@ -164,7 +164,9 @@ class OctopusController extends Controller
 
         $lastId = 1;
         foreach ($this->getBookings("V1", "01-01-1980 00:00:00.000") as $el) {
-            $lastId = $el["documentSequenceNr"] > $lastId ? $el["documentSequenceNr"] : $lastId;
+            if(isset($el["amount"])){
+                $lastId = $el["documentSequenceNr"] > $lastId ? $el["documentSequenceNr"] : $lastId;
+            }
         }
 
         // URL
@@ -186,9 +188,9 @@ class OctopusController extends Controller
                 ],
                 //2016 pour l'instant, date("Y", $booking["date_creation"]) après
                 'bookyearPeriodeNr' => "20160".ceil(date("m", $booking["date_creation"])/3),
-                'documentDate' => date("Y-m-d", $booking["date_creation"]),
-                'expiryDate' => date("Y-m-d", $booking["date"]),
-                'comment' => "",
+                'documentDate' => date("Y-m-d", $booking["date"]),
+                'expiryDate' => date("Y-m-d", $booking["date_lim_reglement"]),
+                'comment' => $booking["note_public"],
                 'reference'=> $booking["ref"],
                 'amount' => (double)$booking["total_ttc"],
                 'currencyCode' => $booking["multicurrency_code"],
@@ -231,7 +233,8 @@ class OctopusController extends Controller
         // POST Data
         $postInput = [
             'name' => $relation["name"],
-            'client' => $relation["client"] == 1 ? true : false,
+            'client' => ($relation["client"] == 1 || $relation["client"]) == 3 ? true : false,
+            'supplier' => $relation["fournisseur"] == 1 ? true : false,
             'streetAndNr' => $relation["address"],
             'postalCode' => $relation["zip"],
             'city' => $relation["town"],
@@ -239,7 +242,9 @@ class OctopusController extends Controller
             'telephone' => $relation["phone"],
             'email'=> $relation["email"],
             'fax' => $relation["fax"],
-            'url' => $relation["url"]
+            'url' => $relation["url"],
+            'vatNr' => $relation["tva_intra"],
+            'vatType' => $relation["tva_assuj"] == 1 ? 1 : 10
         ];
   
         // Headers

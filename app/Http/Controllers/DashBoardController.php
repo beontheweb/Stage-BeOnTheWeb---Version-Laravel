@@ -115,26 +115,34 @@ class DashBoardController extends Controller
 
         $this->zohoController = new ZohoController();
         $this->zohoController->zoho = Zoho::get()->first();
+
+        $relations = \App\Models\Relation::all();
+        $zohoRelations = $this->zohoController->getRelations();
+        foreach ($relations as $relation) {
+            $hasRelation = $this->zohoController->hasRelation($zohoRelations, trim($relation->name));
+            if(!$hasRelation){
+                $this->zohoController->createRelation($relation)["data"]["ID"];
+            }
+        }
+
         $bookingController = new BookingController();
         $bookings = \App\Models\Booking::with("relation")->get();
         $bookingLines = \App\Models\BookingLine::all();
         $bookings = $bookingController->calculateTVA($bookings, $bookingLines);
         $bookingLog = [];
+        $zohoBookings = $this->zohoController->getBookings();
+        $zohoRelations = $this->zohoController->getRelations();
         foreach ($bookings as $booking) {
-            $hasRelation = $this->zohoController->getRelationByName($booking->relation->name);
-            if($hasRelation["code"] == 3100){
-                $relationId = $this->zohoController->createRelation(Relation::where('name', $booking->relation->name)->first())["data"]["ID"];
-            }
-            else{
-                $relationId = $hasRelation['data'][0]['ID'];
-            }
-            $hasBooking = $this->zohoController->getBookingByNumber($booking);
-            if($hasBooking["code"] == 3100){
+            $hasRelation = $this->zohoController->hasRelation($zohoRelations, trim($booking->relation->name));
+            $relationId = $hasRelation['ID'];
+
+            $hasBooking = $this->zohoController->hasBooking($zohoBookings, $booking->alphaNumericalNumber);
+            if(!$hasBooking){
                 $this->zohoController->createBooking($booking, $relationId);
                 $bookingLog[$booking->alphaNumericalNumber] = "Ajouté";
             }
             else{
-                $this->zohoController->updateBooking($hasBooking['data'][0]['ID'], $booking, $relationId);
+                $this->zohoController->updateBooking($hasBooking['ID'], $booking, $relationId);
                 $bookingLog[$booking->alphaNumericalNumber] = "Mise à jour";
             }
             foreach ($bookingLines as $line) {
@@ -163,6 +171,9 @@ class DashBoardController extends Controller
         $this->octopusController->token = $this->octopusController->getToken();
         $this->octopusController->dossierToken = $this->octopusController->getDossierToken();
         $journalKeys = $this->octopusController->getJournalKeys();
+        $this->octopusController->octopus = Octopus::where("action", "send")->get()->first();
+        $this->octopusController->token = $this->octopusController->getToken();
+        $this->octopusController->dossierToken = $this->octopusController->getDossierToken();
         $bookings = [];
 
         $this->dolibarrController = new DolibarrController();
