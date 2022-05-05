@@ -105,27 +105,9 @@ class ZohoController extends Controller
         // POST Data
         $postInput = [
             'data' => [
-                'Edition_FIFCL' => "56564000000583003",
-                'N' => $booking->alphaNumericalNumber,
-                'Num_facture' => $booking->reference,
-                'PERIODE' => $booking->bookYearNumber,
-                'DATE1' => $booking->expiryDate,
-                'Tiers' => $relationId,
-                'Article_budg_taire' => null,
-                'Libell' => $booking->comment,
                 'Montant_HTVA' => $booking->HTVA,
                 'TVA' => $booking->TVA,
                 'Montant_TVAC' => $booking->amount,
-                'subside' => null,
-                'Pay' => null,
-                'Date_paiement' => null,
-                'Paye_HTVA' => null,
-                'Paye_TVAC' => null,
-                'Extrait_compte' => null,
-                'Page_extrait' => null,
-                'Preuve' => "Non",
-                'Achat_Echange' => "Non",
-                'Subventionnable' => "Oui",
             ]
         ];
 
