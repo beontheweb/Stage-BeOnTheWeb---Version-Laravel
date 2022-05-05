@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ZohoController extends Controller
 {
@@ -51,11 +52,11 @@ class ZohoController extends Controller
         // POST Data
         $postInput = [
             'data' => [
-                'Edition_FIFCL' => "56564000000583003",
+                'Edition_FIFCL' => $this->zoho->edition,
                 'N' => $booking->alphaNumericalNumber,
                 'Num_facture' => $booking->reference,
                 'PERIODE' => $booking->bookYearNumber,
-                'DATE1' => $booking->expiryDate,
+                'DATE1' => date_format($booking->expiryDate, "Y-m-d"),
                 'Tiers' => $relationId,
                 'Article_budg_taire' => null,
                 'Libell' => $booking->comment,
@@ -81,6 +82,8 @@ class ZohoController extends Controller
         $response = Http::withHeaders($headers)->post($apiURL, $postInput);
   
         $responseBody = json_decode($response->getBody(), true);
+
+        Log::debug($responseBody);
 
         return $responseBody;
     }
@@ -117,6 +120,8 @@ class ZohoController extends Controller
         $response = Http::withHeaders($headers)->patch($apiURL, $postInput);
   
         $responseBody = json_decode($response->getBody(), true);
+
+        Log::debug($responseBody);
 
         return $responseBody;
     }

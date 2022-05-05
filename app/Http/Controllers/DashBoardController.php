@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Log;
 use App\Models\GeneralParam;
 use App\Models\Octopus;
 use App\Models\Zoho;
@@ -167,22 +168,34 @@ class DashBoardController extends Controller
     public function transferDoliOcto() {
 
         $this->octopusController = new OctopusController();
-        $this->octopusController->octopus = Octopus::where("action", "receive")->get()->first();
-        $this->octopusController->token = $this->octopusController->getToken();
-        $this->octopusController->dossierToken = $this->octopusController->getDossierToken();
-        $journalKeys = $this->octopusController->getJournalKeys();
         $this->octopusController->octopus = Octopus::where("action", "send")->get()->first();
         $this->octopusController->token = $this->octopusController->getToken();
         $this->octopusController->dossierToken = $this->octopusController->getDossierToken();
+        $validBookings = [];
         $bookings = [];
 
         $this->dolibarrController = new DolibarrController();
         $dolibarrBookings = $this->dolibarrController->getBookings();
         foreach ($dolibarrBookings as $dolibarrBooking) {
             if($dolibarrBooking["brouillon"] == null){
-                array_push($bookings, $dolibarrBooking);
+                array_push($validBookings, $dolibarrBooking);
             }
         }
+        $octopusBookings = $this->octopusController->getBookings("V1", "1980-01-01 00:00:00.000");
+        foreach ($validBookings as $key => $validBooking) {
+            $bool = true;
+            foreach ($octopusBookings as $key => $octopusBooking) {
+                if($octopusBooking["reference"] == $validBooking["ref"]){
+                    $bool = false;
+                }
+            }
+            if($bool){
+                array_push($bookings, $validBooking);
+            }
+            
+        }
+
+        $bookingLog = [];
 
         foreach ($bookings as $booking) {
             $relation = $this->dolibarrController->getRelationById($booking["socid"]);
@@ -193,14 +206,22 @@ class DashBoardController extends Controller
             $externalRealtionId = $this->octopusController->getRelationByName($relation["name"])[0]["relationIdentificationServiceData"]["externalRelationId"];
 
             $this->octopusController->createBooking($booking, $relationId, $externalRealtionId);
+            $bookingLog[$booking["ref"]] = "Ajouté";
         }
 
+        
+        $this->octopusController->octopus = Octopus::where("action", "receive")->get()->first();
+        $this->octopusController->token = $this->octopusController->getToken();
+        $this->octopusController->dossierToken = $this->octopusController->getDossierToken();
+        $journalKeys = $this->octopusController->getJournalKeys();
+        
 
         return View::make('dashboard.index', 
             [
              "modifiedBookings" => null,
              "lastUpdated" => GeneralParam::get()->first()->lastUpdated,
-             "journals" => $journalKeys
+             "journals" => $journalKeys,
+             "bookingLog" => $bookingLog
             ]
         );
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class OctopusController extends Controller
 {
@@ -163,7 +164,7 @@ class OctopusController extends Controller
     public function createBooking($booking, $relationId, $externalRealtionId) {
 
         $lastId = 1;
-        foreach ($this->getBookings("V1", "01-01-1980 00:00:00.000") as $el) {
+        foreach ($this->getBookings("V1", "1980-01-01 00:00:00.000") as $el) {
             if(isset($el["amount"])){
                 $lastId = $el["documentSequenceNr"] > $lastId ? $el["documentSequenceNr"] : $lastId;
             }
@@ -200,13 +201,18 @@ class OctopusController extends Controller
             ]
         ];
 
-        foreach ($booking["lines"] as $key => $line) {
+        foreach ($booking["lines"] as $key => $line) { 
+            $dolibarrController = new DolibarrController();
+            if($line["product_ref"] != null){
+                $product = $dolibarrController->getProductByRef($line["product_ref"]);
+            }
+
             $octoLine = [
-                'accountKey' => $line["ref"] ?? $this->octopus->accountKeyDefault,
-                'baseAmount' => (double)$line["total_ht"],
+                'accountKey' => $product["accountancy_code_sell"] ?? $this->octopus->accountKeyDefault,
+                'baseAmount' => abs((double)$line["total_ht"]),
                 'vatCodeKey' => (string)(int)$line["tva_tx"],
-                'vatAmount' => (double)$line["total_tva"],
-                'comment' => $line["description"]
+                'vatAmount' => abs((double)$line["total_tva"]),
+                'comment' => ($line["product_ref"] ?? $this->octopus->accountKeyDefault)." - ".($product["label"] ?? "")." - ".$line["description"]
             ];
             $postInput['buySellBookingServiceData']['bookingLines'][$key] = $octoLine;
         };

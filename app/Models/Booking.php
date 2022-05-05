@@ -23,6 +23,7 @@ class Booking extends Model
 
     protected $casts = [
         'bookingDate' => 'datetime',
+        'expiryDate' => 'datetime',
     ];
 
 }
