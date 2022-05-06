@@ -13,10 +13,13 @@ class DatabaseController extends Controller
 {
     public $octopusController;
 
-    //Vide les tables de donnée. Seulement utilsé pour des tests
-    public function truncate(){
+    //Vide les tables de donnée.
+    public function resetDatabase(){
         DB::table('bookings')->truncate();
         DB::table('booking_lines')->truncate();
+        DB::statement("SET foreign_key_checks = 0");
+        DB::table('relations')->truncate();
+        DB::statement("SET foreign_key_checks = 1");
     }
 
     public function fillDB($array, $octopusController){

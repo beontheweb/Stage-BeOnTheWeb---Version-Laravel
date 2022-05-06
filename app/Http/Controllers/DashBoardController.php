@@ -43,6 +43,25 @@ class DashBoardController extends Controller
         );
     }
 
+    public function resetDatabase() {
+        $this->databaseController = new DatabaseController();
+        $this->databaseController->resetDatabase();
+
+        $this->octopusController = new OctopusController();
+        $this->octopusController->octopus = Octopus::where("action", "receive")->get()->first();
+
+        $journalKeys = $this->octopusController->getJournalKeys();
+
+        return View::make('dashboard.index', 
+            [
+             "modifiedBookings" => null,
+             "lastUpdated" => GeneralParam::get()->first()->lastUpdated,
+             "journals" => $journalKeys,
+             "reset" => "Réinitialisation exécutée"
+            ]
+        );
+    }
+
     public function updateDB(Request $request) {
         $completeBookings = [];
 
