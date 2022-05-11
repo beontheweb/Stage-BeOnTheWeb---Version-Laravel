@@ -26,7 +26,7 @@
         <button type="submit" class="btn btn-primary mt-3">Récupérer les journaux d'Octopus</button>
     </form>
     <h3 class="mt-3">Zoho Creator</h3>
-    <a href="https://accounts.zoho.com/signin?servicename=AaaServer&serviceurl=https%3A%2F%2Faccounts.zoho.com%2Foauth%2Fv2%2Fauth%3Fresponse_type%3Dcode%26client_id%3D1000.KKL6WQ1Y5GKIG0B1KBAF7ZXUWY501L%26scope%3DZohoCreator.form.CREATE,ZohoCreator.report.CREATE,ZohoCreator.report.READ,ZohoCreator.report.UPDATE,ZohoCreator.report.DELETE,ZohoCreator.meta.form.READ,ZohoCreator.meta.application.READ,ZohoCreator.dashboard.READ%26redirect_uri%3Dhttp://127.0.0.1:8000%26access_type%3Doffline"><button type="submit" class="btn btn-primary">Auth Zoho</button></a>
+    <a href="https://accounts.zoho.com/signin?servicename=AaaServer&serviceurl=https%3A%2F%2Faccounts.zoho.com%2Foauth%2Fv2%2Fauth%3Fresponse_type%3Dcode%26client_id%3D1000.KKL6WQ1Y5GKIG0B1KBAF7ZXUWY501L%26scope%3DZohoCreator.form.CREATE,ZohoCreator.report.CREATE,ZohoCreator.report.READ,ZohoCreator.report.UPDATE,ZohoCreator.report.DELETE,ZohoCreator.meta.form.READ,ZohoCreator.meta.application.READ,ZohoCreator.dashboard.READ%26redirect_uri%3Dhttp://127.0.0.1:8000%26access_type%3Doffline"><button type="submit" class="btn {{$lastZohoAuth ? 'btn-success' : 'btn-danger'}}">Auth Zoho</button></a>
     <a href="/sendDataZoho"><button type="submit" class="btn btn-primary">Envoyer les bookings vers Zoho Creator</button></a>
     <form action="{{ route('dashboard.transferDoliOcto') }}" method="get">
         @csrf
@@ -48,17 +48,30 @@
     }
     ?>
     <?php
-    if (isset($bookingLog)) {
+    if (isset($octoBookingLog)) {
         echo '<h3 class="mt-2">Log</h3>';
         echo '<pre>';
-            if(count($bookingLog) == 0){
+            if(count($octoBookingLog) == 0){
                 print_r("Les Factures trouvées existent déjà dans Octopus");
             }
             else{
-                print_r($bookingLog);
+                print_r($octoBookingLog);
             }
         echo '</pre>';
     }
-?>
+    ?>
+    <?php
+    if (isset($zohoBookingLog)) {
+        echo '<h3 class="mt-2">Log</h3>';
+        echo '<pre>';
+            if(count($zohoBookingLog) == 0){
+                print_r("Aucunes factures ajoutées ou modifiées dans Zoho Creator");
+            }
+            else{
+                print_r($zohoBookingLog);
+            }
+        echo '</pre>';
+    }
+    ?>
 </main>
 @endsection

@@ -25,9 +25,11 @@ class DashBoardController extends Controller
             $this->zohoController = new ZohoController();
             $this->zohoController->zoho = Zoho::get()->first();
             $tokens = $this->zohoController->getToken($request->code);
-            //$this->zohoController->zoho->refreshToken = $tokens->refresh_token;
             $this->zohoController->zoho->accessToken = $tokens["access_token"];
             $this->zohoController->zoho->save();
+            $generalParams = GeneralParam::get()->first();
+            $generalParams->lastZohoAuth = now();
+            $generalParams->save();
         }
 
         $this->octopusController = new OctopusController();
@@ -35,10 +37,14 @@ class DashBoardController extends Controller
 
         $journalKeys = $this->octopusController->getJournalKeys();
 
+        $generalParams = GeneralParam::get()->first();
+        $lastZohoAuth = time() - strtotime($generalParams->lastZohoAuth) < 3601;
+
         return View::make('dashboard.index', 
             [
              "modifiedBookings" => null,
-             "lastUpdated" => GeneralParam::get()->first()->lastUpdated,
+             "lastUpdated" => $generalParams->lastUpdated,
+             "lastZohoAuth" => $lastZohoAuth,
              "journals" => $journalKeys
             ]
         );
@@ -53,10 +59,14 @@ class DashBoardController extends Controller
 
         $journalKeys = $this->octopusController->getJournalKeys();
 
+        $generalParams = GeneralParam::get()->first();
+        $lastZohoAuth = time() - strtotime($generalParams->lastZohoAuth) < 3601;
+
         return View::make('dashboard.index', 
             [
              "modifiedBookings" => null,
-             "lastUpdated" => GeneralParam::get()->first()->lastUpdated,
+             "lastUpdated" => $generalParams->lastUpdated,
+             "lastZohoAuth" => $lastZohoAuth,
              "journals" => $journalKeys,
              "reset" => "Réinitialisation exécutée"
             ]
@@ -97,11 +107,13 @@ class DashBoardController extends Controller
         }
 
         $journalKeys = $this->octopusController->getJournalKeys();
+        $lastZohoAuth = time() - strtotime($params->lastZohoAuth) < 3601;
 
         return View::make('dashboard.index', 
             [
              "modifiedBookings" => $completeBookings,
              "lastUpdated" => $params->lastUpdated,
+             "lastZohoAuth" => $lastZohoAuth,
              "journals" => $journalKeys
             ]
         );
@@ -117,12 +129,16 @@ class DashBoardController extends Controller
         $this->zohoController->zoho = Zoho::get()->first();
         $this->zohoController->zoho->accessToken = $this->zohoController->refreshToken();
 
+        $generalParams = GeneralParam::get()->first();
+        $lastZohoAuth = time() - strtotime($generalParams->lastZohoAuth) < 3601;
+
 
         return View::make('dashboard.index', 
             [
              "zohoToken" => $this->zohoController->zoho->accessToken,
              "modifiedBookings" => null,
-             "lastUpdated" => GeneralParam::get()->first()->lastUpdated,
+             "lastUpdated" => $generalParams->lastUpdated,
+             "lastZohoAuth" => $lastZohoAuth,
              "journals" => $journalKeys
             ]
         );
@@ -150,7 +166,7 @@ class DashBoardController extends Controller
         $bookings = \App\Models\Booking::with("relation")->get();
         $bookingLines = \App\Models\BookingLine::all();
         $bookings = $bookingController->calculateTVA($bookings, $bookingLines);
-        $bookingLog = [];
+        $zohoBookingLog = [];
         $zohoBookings = $this->zohoController->getBookings();
         $zohoRelations = $this->zohoController->getRelations();
         foreach ($bookings as $booking) {
@@ -159,12 +175,23 @@ class DashBoardController extends Controller
 
             $hasBooking = $this->zohoController->hasBooking($zohoBookings, $booking->alphaNumericalNumber);
             if(!$hasBooking){
-                $this->zohoController->createBooking($booking, $relationId);
-                $bookingLog[$booking->alphaNumericalNumber] = "Ajouté";
+                $result = $this->zohoController->createBooking($booking, $relationId);
+                if(isset($result["error"])){
+                    $zohoBookingLog[$booking->alphaNumericalNumber] = $result["error"];
+                }
+                else{
+                    $zohoBookingLog[$booking->alphaNumericalNumber] = "Ajouté";
+                }
+                
             }
             else{
-                $this->zohoController->updateBooking($hasBooking['ID'], $booking, $relationId);
-                $bookingLog[$booking->alphaNumericalNumber] = "Mise à jour";
+                $result = $this->zohoController->updateBooking($hasBooking['ID'], $booking, $relationId);
+                if(isset($result["error"])){
+                    $zohoBookingLog[$booking->alphaNumericalNumber] = $result["error"];
+                }
+                else{
+                    $zohoBookingLog[$booking->alphaNumericalNumber] = "Mise à jour";
+                }
             }
             foreach ($bookingLines as $line) {
                 if($line->booking_id == $booking->id){
@@ -174,13 +201,16 @@ class DashBoardController extends Controller
             $booking->delete();
         }
 
+        $generalParams = GeneralParam::get()->first();
+        $lastZohoAuth = time() - strtotime($generalParams->lastZohoAuth) < 3601;
 
         return View::make('dashboard.index', 
             [
              "modifiedBookings" => null,
-             "lastUpdated" => GeneralParam::get()->first()->lastUpdated,
+             "lastUpdated" => $generalParams->lastUpdated,
+             "lastZohoAuth" => $lastZohoAuth,
              "journals" => $journalKeys,
-             "bookingLog" => $bookingLog
+             "zohoBookingLog" => $zohoBookingLog
             ]
         );
     }
@@ -193,15 +223,15 @@ class DashBoardController extends Controller
         $this->octopusController->dossierToken = $this->octopusController->getDossierToken();
         $validBookings = [];
         $bookings = [];
-        $bookingLog = [];
+        $octoBookingLog = [];
 
         $this->dolibarrController = new DolibarrController();
         $this->dolibarrController->dolibarr = Dolibarr::get()->first();
         $dolibarrBookings = $this->dolibarrController->getBookings($request->timestamp);
 
         if(isset($dolibarrBookings["error"])) {
-            $bookingLog["Code"] = $dolibarrBookings["error"]["code"];
-            $bookingLog["Message"] = $dolibarrBookings["error"]["message"];
+            $octoBookingLog["Code"] = $dolibarrBookings["error"]["code"];
+            $octoBookingLog["Message"] = $dolibarrBookings["error"]["message"];
         }
         else {
             foreach ($dolibarrBookings as $dolibarrBooking) {
@@ -235,10 +265,10 @@ class DashBoardController extends Controller
     
                 $result = $this->octopusController->createBooking($booking, $relationId, $externalRealtionId);
                 if(isset($result["errorCode"])) {
-                    $bookingLog[$booking["ref"]] = "Erreur ".$result["errorCode"]." : ".$result["technicalInfo"];
+                    $octoBookingLog[$booking["ref"]] = "Erreur ".$result["errorCode"]." : ".$result["technicalInfo"];
                 }
                 else {
-                    $bookingLog[$booking["ref"]] = "Ajouté";
+                    $octoBookingLog[$booking["ref"]] = "Ajouté";
                 }
             }
         }
@@ -247,14 +277,18 @@ class DashBoardController extends Controller
         $this->octopusController->token = $this->octopusController->getToken();
         $this->octopusController->dossierToken = $this->octopusController->getDossierToken();
         $journalKeys = $this->octopusController->getJournalKeys();
+
+        $generalParams = GeneralParam::get()->first();
+        $lastZohoAuth = time() - strtotime($generalParams->lastZohoAuth) < 3601;
         
 
         return View::make('dashboard.index', 
             [
              "modifiedBookings" => null,
-             "lastUpdated" => GeneralParam::get()->first()->lastUpdated,
+             "lastUpdated" => $generalParams->lastUpdated,
+             "lastZohoAuth" => $lastZohoAuth,
              "journals" => $journalKeys,
-             "bookingLog" => $bookingLog
+             "octoBookingLog" => $octoBookingLog
             ]
         );
     }
