@@ -7,14 +7,16 @@ use Illuminate\Support\Facades\Http;
 
 class DolibarrController extends Controller
 {
-    public function getBookings(){
+    public $dolibarr;
+
+    public function getBookings($timestamp){
         // URL
-        $apiURL = 'https://dorian-dolibarr.beontheweb.be/api/index.php/invoices?sortfield=t.rowid&sortorder=ASC&limit=100';
+        $apiURL = $this->dolibarr->urlWS.'/invoices?sortfield=t.rowid&sortorder=ASC&limit=100&sqlfilters=(t.datef:>=:'.date("Y/m/d", strtotime($timestamp)).')';
   
         // Headers
         $headers = [
             'Accept' => 'application/json',
-            'DOLAPIKEY' => '848vf87PgPK7kawI812TTKjfZNgdzEB8'
+            'DOLAPIKEY' => $this->dolibarr->apiKey
         ];
   
         $response = Http::withHeaders($headers)->get($apiURL);
@@ -27,12 +29,12 @@ class DolibarrController extends Controller
 
     public function getRelationById($id){
         // URL
-        $apiURL = 'https://dorian-dolibarr.beontheweb.be/api/index.php/thirdparties/'.$id;
+        $apiURL = $this->dolibarr->urlWS.'/thirdparties/'.$id;
   
         // Headers
         $headers = [
             'Accept' => 'application/json',
-            'DOLAPIKEY' => '848vf87PgPK7kawI812TTKjfZNgdzEB8'
+            'DOLAPIKEY' => $this->dolibarr->apiKey
         ];
   
         $response = Http::withHeaders($headers)->get($apiURL);
@@ -45,12 +47,12 @@ class DolibarrController extends Controller
 
     public function getProductByRef($ref){
         // URL
-        $apiURL = 'https://dorian-dolibarr.beontheweb.be/api/index.php/products/ref/'.$ref;
+        $apiURL = $this->dolibarr->urlWS.'/products/ref/'.$ref;
   
         // Headers
         $headers = [
             'Accept' => 'application/json',
-            'DOLAPIKEY' => '848vf87PgPK7kawI812TTKjfZNgdzEB8'
+            'DOLAPIKEY' => $this->dolibarr->apiKey
         ];
   
         $response = Http::withHeaders($headers)->get($apiURL);

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\GeneralParam;
 use App\Models\Octopus;
 use App\Models\Zoho;
+use App\Models\Dolibarr;
 use App\Models\Relation;
 
 class DashBoardController extends Controller
@@ -184,7 +185,7 @@ class DashBoardController extends Controller
         );
     }
 
-    public function transferDoliOcto() {
+    public function transferDoliOcto(Request $request) {
 
         $this->octopusController = new OctopusController();
         $this->octopusController->octopus = Octopus::where("action", "send")->get()->first();
@@ -192,42 +193,55 @@ class DashBoardController extends Controller
         $this->octopusController->dossierToken = $this->octopusController->getDossierToken();
         $validBookings = [];
         $bookings = [];
-
-        $this->dolibarrController = new DolibarrController();
-        $dolibarrBookings = $this->dolibarrController->getBookings();
-        foreach ($dolibarrBookings as $dolibarrBooking) {
-            if($dolibarrBooking["brouillon"] == null){
-                array_push($validBookings, $dolibarrBooking);
-            }
-        }
-        $octopusBookings = $this->octopusController->getBookings("V1", "1980-01-01 00:00:00.000");
-        foreach ($validBookings as $key => $validBooking) {
-            $bool = true;
-            foreach ($octopusBookings as $key => $octopusBooking) {
-                if($octopusBooking["reference"] == $validBooking["ref"]){
-                    $bool = false;
-                }
-            }
-            if($bool){
-                array_push($bookings, $validBooking);
-            }
-            
-        }
-
         $bookingLog = [];
 
-        foreach ($bookings as $booking) {
-            $relation = $this->dolibarrController->getRelationById($booking["socid"]);
-            if(isset($this->octopusController->getRelationByName($relation["name"])["errorCode"])){
-                $this->octopusController->createRelation($relation);
-            }
-            $relationId = $this->octopusController->getRelationByName($relation["name"])[0]["relationIdentificationServiceData"]["relationKey"]["id"];
-            $externalRealtionId = $this->octopusController->getRelationByName($relation["name"])[0]["relationIdentificationServiceData"]["externalRelationId"];
+        $this->dolibarrController = new DolibarrController();
+        $this->dolibarrController->dolibarr = Dolibarr::get()->first();
+        $dolibarrBookings = $this->dolibarrController->getBookings($request->timestamp);
 
-            $this->octopusController->createBooking($booking, $relationId, $externalRealtionId);
-            $bookingLog[$booking["ref"]] = "Ajouté";
+        if(isset($dolibarrBookings["error"])) {
+            $bookingLog["Code"] = $dolibarrBookings["error"]["code"];
+            $bookingLog["Message"] = $dolibarrBookings["error"]["message"];
         }
-
+        else {
+            foreach ($dolibarrBookings as $dolibarrBooking) {
+                if($dolibarrBooking["brouillon"] == null){
+                    array_push($validBookings, $dolibarrBooking);
+                }
+            }
+            $octopusBookings = $this->octopusController->getBookings("V1", "1980-01-01 00:00:00.000");
+            foreach ($validBookings as $key => $validBooking) {
+                $bool = true;
+                foreach ($octopusBookings as $key => $octopusBooking) {
+                    if(isset($octopusBooking["reference"])){
+                        if($octopusBooking["reference"] == $validBooking["ref"]){
+                            $bool = false;
+                        }
+                    }
+                }
+                if($bool){
+                    array_push($bookings, $validBooking);
+                }
+                
+            }
+    
+            foreach ($bookings as $booking) {
+                $relation = $this->dolibarrController->getRelationById($booking["socid"]);
+                if(isset($this->octopusController->getRelationByName($relation["name"])["errorCode"])){
+                    $this->octopusController->createRelation($relation);
+                }
+                $relationId = $this->octopusController->getRelationByName($relation["name"])[0]["relationIdentificationServiceData"]["relationKey"]["id"];
+                $externalRealtionId = $this->octopusController->getRelationByName($relation["name"])[0]["relationIdentificationServiceData"]["externalRelationId"];
+    
+                $result = $this->octopusController->createBooking($booking, $relationId, $externalRealtionId);
+                if(isset($result["errorCode"])) {
+                    $bookingLog[$booking["ref"]] = "Erreur ".$result["errorCode"]." : ".$result["technicalInfo"];
+                }
+                else {
+                    $bookingLog[$booking["ref"]] = "Ajouté";
+                }
+            }
+        }
         
         $this->octopusController->octopus = Octopus::where("action", "receive")->get()->first();
         $this->octopusController->token = $this->octopusController->getToken();
