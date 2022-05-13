@@ -13,6 +13,9 @@ class OctopusController extends Controller
     public $token;
     public $dossierToken;
 
+    /**
+     * Récupère le token nécessaire pour la récupèration du token de dossier
+     */
     public function getToken() {
         // URL
         $apiURL = $this->octopus->urlWs.'/authentication';
@@ -37,6 +40,9 @@ class OctopusController extends Controller
         return $responseBody["token"];
     }
 
+    /**
+     * Récupère le token de dossier nécessaire pour les appels à l'api d'Octopus
+     */
     public function getDossierToken() {
         // URL
         $apiURL = $this->octopus->urlWs.'/dossiers?dossierId='.$this->octopus->idDossier;
@@ -54,6 +60,9 @@ class OctopusController extends Controller
         return $responseBody["Dossiertoken"];
     }
 
+    /**
+     * Récupère les bookings d'octopus présent dans le journal de la journalKey correspondante et pas plus vieux que le timestamp donné
+     */
     public function getBookings($journalKey, $timestamp) {
 
         // URL
@@ -71,6 +80,9 @@ class OctopusController extends Controller
         return $responseBody;
     }
 
+    /**
+     * Récupère la relation d'Octopus ayant l'id donnée
+     */
     public function getRelation($relationId) {
 
         // URL
@@ -88,6 +100,9 @@ class OctopusController extends Controller
         return $responseBody;
     }
 
+    /**
+     * Récupère la relation d'Octopus ayant le nom donné
+     */
     public function getRelationByName($name) {
 
         // URL
@@ -105,6 +120,9 @@ class OctopusController extends Controller
         return $responseBody;
     }
 
+    /**
+     * Récupère le pourcentage de TVA associé au code donné
+     */
     public function getVatBasePercentage($tvaCodeKey){
         // URL
         $apiURL = $this->octopus->urlWs.'/dossiers/'.$this->octopus->idDossier.'/vatcodes';
@@ -125,10 +143,14 @@ class OctopusController extends Controller
             }
         }
 
+        //Valeur par défaut
         return 21.0;
 
     }
 
+    /**
+     * Récupère le code de TVA associé au pourcentage donné
+     */
     public function getVatCodeKey($tvaPercentage){
         // URL
         $apiURL = $this->octopus->urlWs.'/dossiers/'.$this->octopus->idDossier.'/vatcodes';
@@ -149,10 +171,14 @@ class OctopusController extends Controller
             }
         }
 
+        //Valeur par défaut
         return "D21";
 
     }
 
+    /**
+     * Récupère la liste des clés de journaux d'Octopus située dans les paramètres et en fait un tableau
+     */
     public function getJournalKeys(){
         $journalKeys = explode(",", $this->octopus->journalKeys);
         foreach ($journalKeys as $key => $journalKey) {
@@ -162,8 +188,12 @@ class OctopusController extends Controller
         return $journalKeys;
     }
 
+    /**
+     * Crée un booking dans Octopus dans le journal de vente
+     */
     public function createBooking($booking, $relationId, $externalRealtionId) {
 
+        //Récupère l'id du dernier booking dans le journal de vente
         $lastId = 0;
         foreach ($this->getBookings("V1", "1980-01-01 00:00:00.000") as $el) {
             if(isset($el["amount"])){
@@ -188,8 +218,7 @@ class OctopusController extends Controller
                     ],
                     'externalRelationId' => $externalRealtionId
                 ],
-                'bookyearPeriodeNr' => "20160".ceil(date("m", $booking["date_creation"])/3),
-                //'bookyearPeriodeNr' => date("Y", $booking["date_creation"])."0".ceil(date("m", $booking["date_creation"])/3),
+                'bookyearPeriodeNr' => date("Y", $booking["date_creation"])."0".ceil(date("m", $booking["date_creation"])/3),
                 'documentDate' => date("Y-m-d", $booking["date"]),
                 'expiryDate' => date("Y-m-d", $booking["date_lim_reglement"]),
                 'comment' => $booking["note_public"],
@@ -233,6 +262,9 @@ class OctopusController extends Controller
         return $responseBody;
     }
 
+    /**
+     * Crée une relation dans Octopus
+     */
     public function createRelation($relation) {
 
         // URL

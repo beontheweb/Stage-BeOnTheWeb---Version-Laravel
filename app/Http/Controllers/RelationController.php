@@ -10,6 +10,9 @@ use App\Models\BookingLine;
 
 class RelationController extends Controller
 {
+    /**
+     * Renvoie vers la vue index des relations
+     */
     public function index() {
 
         $relations = Relation::all();

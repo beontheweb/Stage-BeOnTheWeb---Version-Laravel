@@ -9,16 +9,14 @@ use App\Models\BookingLine;
 
 class BookingController extends Controller
 {
+    /**
+     * Renvoie vers la vue index des bookings
+     */
     public function index() {
 
         $bookings = Booking::with("relation")->get();
-
         $bookingLines = BookingLine::all();
-
         $bookings = $this->calculateTVA($bookings, $bookingLines);
-
-
-
 
         return View::make('bookings.index', 
             [
@@ -28,7 +26,9 @@ class BookingController extends Controller
         );
     }
 
-    //Calcule la somme des montants HTVA et TVA des Booking Lines
+    /**
+     * Calcule la somme des montants HTVA et TVA des Booking Lines
+     */
     public function calculateTVA($bookings, $bookingLines){
         foreach ($bookings as $booking) {
             $booking->HTVA = 0;

@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Auth;
 
 class LogoutController extends Controller
 {
+    /**
+     * Déconnecte l'utilisateur
+     */
     public function logout(Request $request)
     {
         Auth::logout();

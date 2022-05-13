@@ -7,11 +7,17 @@ use App\Providers\RouteServiceProvider;
 
 class LoginController extends Controller
 {
+    /**
+     * Renvoie la vue login de Auth
+     */ 
     public function show()
     {
         return view('auth.login');
     }
 
+    /**
+     * Vérifie les identifiants de connexions et connecte l'utilisateur si ils sont correctes
+     */
     public function login(Request $request)
     {
         $success = auth()->attempt([

@@ -4,12 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Log;
 use App\Models\GeneralParam;
 use App\Models\Octopus;
 use App\Models\Zoho;
 use App\Models\Dolibarr;
-use App\Models\Relation;
 
 class DashBoardController extends Controller
 {
@@ -19,61 +17,76 @@ class DashBoardController extends Controller
     public $zohoController;
     public $dolibarrController;
 
-    public function index(Request $request) {
+    /**
+     * Appelé en premier pour la route /home, récupère le code renvoyé pour Auth Zoho en requête 
+     *
+     * @param Request $request
+     * @return void
+     */
+    public function indexSetup(Request $request) {
 
         if($request->code){
+            //Si jamais l'addresse du site est changée, la partie redirect_uri de l'href du bouton Auth Zoho de la vue dashboard.index doit être changée aussi
+
+            //Récupère l'access token de Zoho
             $this->zohoController = new ZohoController();
             $this->zohoController->zoho = Zoho::get()->first();
             $tokens = $this->zohoController->getToken($request->code);
             $this->zohoController->zoho->accessToken = $tokens["access_token"];
             $this->zohoController->zoho->save();
+
+            //Enregistre le timestamp qui sera utilisé pour vérifier la validité du token
             $generalParams = GeneralParam::get()->first();
             $generalParams->lastZohoAuth = now();
             $generalParams->save();
         }
 
+        return $this->index([]);
+    }
+
+    /**
+     * Renvoie vers la vue index du dashboard et accepte un tableau associatif pour envoyer des données à la vue
+     */
+    public function index($addVariables) {
+
         $this->octopusController = new OctopusController();
         $this->octopusController->octopus = Octopus::where("action", "receive")->get()->first();
-
         $journalKeys = $this->octopusController->getJournalKeys();
 
         $generalParams = GeneralParam::get()->first();
         $lastZohoAuth = time() - strtotime($generalParams->lastZohoAuth) < 3601;
 
-        return View::make('dashboard.index', 
-            [
-             "modifiedBookings" => null,
-             "lastUpdated" => $generalParams->lastUpdated,
-             "lastZohoAuth" => $lastZohoAuth,
-             "journals" => $journalKeys
-            ]
-        );
+        //Données devant toujours être envoyées à la vue dashboard
+        $array = [
+            "modifiedBookings" => null,
+            "lastUpdated" => $generalParams->lastUpdated,
+            "lastZohoAuth" => $lastZohoAuth,
+            "journals" => $journalKeys
+        ];
+
+        //Ajoute les données supplémentaires au tableau de données générales
+        $array = array_merge($array, $addVariables);
+
+        return View::make('dashboard.index', $array);
     }
 
+    /**
+     * Réinitialise les tableaux bookings, bookingLines et relations de la base donnée
+     */
     public function resetDatabase() {
         $this->databaseController = new DatabaseController();
         $this->databaseController->resetDatabase();
 
-        $this->octopusController = new OctopusController();
-        $this->octopusController->octopus = Octopus::where("action", "receive")->get()->first();
+        $addVariables = ["reset" => "Réinitialisation exécutée"];
 
-        $journalKeys = $this->octopusController->getJournalKeys();
-
-        $generalParams = GeneralParam::get()->first();
-        $lastZohoAuth = time() - strtotime($generalParams->lastZohoAuth) < 3601;
-
-        return View::make('dashboard.index', 
-            [
-             "modifiedBookings" => null,
-             "lastUpdated" => $generalParams->lastUpdated,
-             "lastZohoAuth" => $lastZohoAuth,
-             "journals" => $journalKeys,
-             "reset" => "Réinitialisation exécutée"
-            ]
-        );
+        return $this->index($addVariables);
     }
 
+    /**
+     * Récupère les données de l'octopus associé dans les paramètres (où "action" = "receive") et les place dans la base de donneé du hub
+     */
     public function updateDB(Request $request) {
+        //Log montrant les bookings récupérés
         $completeBookings = [];
 
         //Récupère les paramètres du formulaire
@@ -85,10 +98,11 @@ class DashBoardController extends Controller
         $this->octopusController->token = $this->octopusController->getToken();
         $this->octopusController->dossierToken = $this->octopusController->getDossierToken();
 
+        //Récupération des params généraux pour pouvoir mettre à jour lastUpdated
         $this->databaseController = new DatabaseController();
         $params = GeneralParam::get()->first();
 
-        //Pour chaque clé de journal, appelle l'api octopus pour récupérer les bookings correspondant et mets à jour la base de donnée
+        //Pour chaque clé de journal, appelle l'api d'octopus pour récupérer les bookings correspondant et mets à jour la base de donnée
         if ($journalKeys) {
             foreach ($journalKeys as $journalKey) {
                 //Retire les espaces
@@ -98,61 +112,29 @@ class DashBoardController extends Controller
                 if(!isset($bookings["technicalInfo"])){
                     $this->databaseController->fillDB($bookings, $this->octopusController);
                 }
-                //Juste pour le débuggage
+                //Rajoute le booking au log
                 array_push($completeBookings, $bookings);
             }
 
+            //Met à jour la date utilisée pour le timestamp
             $params->lastUpdated = date('Y-m-d H:i:s');
             $params->save();
         }
 
-        $journalKeys = $this->octopusController->getJournalKeys();
-        $lastZohoAuth = time() - strtotime($params->lastZohoAuth) < 3601;
+        $addVariables = ["modifiedBookings" => $completeBookings];
 
-        return View::make('dashboard.index', 
-            [
-             "modifiedBookings" => $completeBookings,
-             "lastUpdated" => $params->lastUpdated,
-             "lastZohoAuth" => $lastZohoAuth,
-             "journals" => $journalKeys
-            ]
-        );
-    }
-
-    public function refreshZohoToken() {
-
-        $this->octopusController = new OctopusController();
-        $this->octopusController->octopus = Octopus::where("action", "receive")->get()->first();
-        $journalKeys = $this->octopusController->getJournalKeys();
-
-        $this->zohoController = new ZohoController();
-        $this->zohoController->zoho = Zoho::get()->first();
-        $this->zohoController->zoho->accessToken = $this->zohoController->refreshToken();
-
-        $generalParams = GeneralParam::get()->first();
-        $lastZohoAuth = time() - strtotime($generalParams->lastZohoAuth) < 3601;
-
-
-        return View::make('dashboard.index', 
-            [
-             "zohoToken" => $this->zohoController->zoho->accessToken,
-             "modifiedBookings" => null,
-             "lastUpdated" => $generalParams->lastUpdated,
-             "lastZohoAuth" => $lastZohoAuth,
-             "journals" => $journalKeys
-            ]
-        );
+        return $this->index($addVariables);
     }
     
+    /**
+     * Transfert les données du hub vers le Zoho Creator associé et les supprime du hub
+     */
     public function sendDataZoho() {
-
-        $this->octopusController = new OctopusController();
-        $this->octopusController->octopus = Octopus::where("action", "receive")->get()->first();
-        $journalKeys = $this->octopusController->getJournalKeys();
 
         $this->zohoController = new ZohoController();
         $this->zohoController->zoho = Zoho::get()->first();
 
+        //Pour chaques relations de la base de donnée, vérifie si elle existe déjà dans Zoho et sinon la crée
         $relations = \App\Models\Relation::all();
         $zohoRelations = $this->zohoController->getRelations();
         foreach ($relations as $relation) {
@@ -163,12 +145,16 @@ class DashBoardController extends Controller
         }
 
         $bookingController = new BookingController();
+        //Récupère la liste des bookings du hub
         $bookings = \App\Models\Booking::with("relation")->get();
         $bookingLines = \App\Models\BookingLine::all();
         $bookings = $bookingController->calculateTVA($bookings, $bookingLines);
+        //Log contenant la liste des bookings créés ou mis à jour dans Zoho
         $zohoBookingLog = [];
+        //Récupère les bookings déjà présents dans Zoho 
         $zohoBookings = $this->zohoController->getBookings();
         $zohoRelations = $this->zohoController->getRelations();
+        //Pour chaque bookings du hub, crée ou met à jour le booking dans Zoho
         foreach ($bookings as $booking) {
             $hasRelation = $this->zohoController->hasRelation($zohoRelations, trim($booking->relation->name));
             $relationId = $hasRelation['ID'];
@@ -193,6 +179,8 @@ class DashBoardController extends Controller
                     $zohoBookingLog[$booking->alphaNumericalNumber] = "Mise à jour";
                 }
             }
+
+            //Supprime le booking et ses bookingLines
             foreach ($bookingLines as $line) {
                 if($line->booking_id == $booking->id){
                     $line->delete();
@@ -201,20 +189,14 @@ class DashBoardController extends Controller
             $booking->delete();
         }
 
-        $generalParams = GeneralParam::get()->first();
-        $lastZohoAuth = time() - strtotime($generalParams->lastZohoAuth) < 3601;
+        $addVariables = ["zohoBookingLog" => $zohoBookingLog];
 
-        return View::make('dashboard.index', 
-            [
-             "modifiedBookings" => null,
-             "lastUpdated" => $generalParams->lastUpdated,
-             "lastZohoAuth" => $lastZohoAuth,
-             "journals" => $journalKeys,
-             "zohoBookingLog" => $zohoBookingLog
-            ]
-        );
+        return $this->index($addVariables);
     }
 
+    /**
+     * Récupère les factures de ventes du Dolibarr associé et les transfert vers l'Octopus associé (où "action" = "send")
+     */
     public function transferDoliOcto(Request $request) {
 
         $this->octopusController = new OctopusController();
@@ -223,23 +205,29 @@ class DashBoardController extends Controller
         $this->octopusController->dossierToken = $this->octopusController->getDossierToken();
         $validBookings = [];
         $bookings = [];
+        //Log contenant la liste des factures de vente créées dans Octopus
         $octoBookingLog = [];
 
         $this->dolibarrController = new DolibarrController();
         $this->dolibarrController->dolibarr = Dolibarr::get()->first();
+        //Récupère les factures de ventes de Dolibarr
         $dolibarrBookings = $this->dolibarrController->getBookings($request->timestamp);
 
         if(isset($dolibarrBookings["error"])) {
+            //Renvoie l'erreur vers la vue si il y en a eu une lors de la récupération des factures
             $octoBookingLog["Code"] = $dolibarrBookings["error"]["code"];
             $octoBookingLog["Message"] = $dolibarrBookings["error"]["message"];
         }
         else {
+            //Boucle sur les factures pour retirer celle ayant un statut "brouillon"
             foreach ($dolibarrBookings as $dolibarrBooking) {
                 if($dolibarrBooking["brouillon"] == null){
                     array_push($validBookings, $dolibarrBooking);
                 }
             }
+            //Récupère les factures de ventes dans octopus
             $octopusBookings = $this->octopusController->getBookings("V1", "1980-01-01 00:00:00.000");
+            //Ne garde que les factures de dolibarr n'existant pas déjà dans octopus
             foreach ($validBookings as $key => $validBooking) {
                 $bool = true;
                 foreach ($octopusBookings as $key => $octopusBooking) {
@@ -254,7 +242,8 @@ class DashBoardController extends Controller
                 }
                 
             }
-    
+            
+            //Pour chaque factures, crée la relation dans octopus si elle n'existe pas déjà puis crée la facture
             foreach ($bookings as $booking) {
                 $relation = $this->dolibarrController->getRelationById($booking["socid"]);
                 if(isset($this->octopusController->getRelationByName($relation["name"])["errorCode"])){
@@ -272,24 +261,9 @@ class DashBoardController extends Controller
                 }
             }
         }
-        
-        $this->octopusController->octopus = Octopus::where("action", "receive")->get()->first();
-        $this->octopusController->token = $this->octopusController->getToken();
-        $this->octopusController->dossierToken = $this->octopusController->getDossierToken();
-        $journalKeys = $this->octopusController->getJournalKeys();
 
-        $generalParams = GeneralParam::get()->first();
-        $lastZohoAuth = time() - strtotime($generalParams->lastZohoAuth) < 3601;
-        
+        $addVariables = ["octoBookingLog" => $octoBookingLog];
 
-        return View::make('dashboard.index', 
-            [
-             "modifiedBookings" => null,
-             "lastUpdated" => $generalParams->lastUpdated,
-             "lastZohoAuth" => $lastZohoAuth,
-             "journals" => $journalKeys,
-             "octoBookingLog" => $octoBookingLog
-            ]
-        );
+        return $this->index($addVariables);
     }
 }

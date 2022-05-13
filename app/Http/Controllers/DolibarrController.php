@@ -9,6 +9,9 @@ class DolibarrController extends Controller
 {
     public $dolibarr;
 
+    /**
+     * Récupère les factures de ventes dans Dolibarr ayant une date de facturation > timestamp du formulaire
+     */
     public function getBookings($timestamp){
         // URL
         $apiURL = $this->dolibarr->urlWS.'/invoices?sortfield=t.rowid&sortorder=ASC&limit=100&sqlfilters=(t.datef:>=:'.date("Y/m/d", strtotime($timestamp)).')';
@@ -27,6 +30,9 @@ class DolibarrController extends Controller
 
     }
 
+    /**
+     * Récupère la relation dans Dolibarr ayant l'id donnée
+     */
     public function getRelationById($id){
         // URL
         $apiURL = $this->dolibarr->urlWS.'/thirdparties/'.$id;
@@ -45,6 +51,9 @@ class DolibarrController extends Controller
 
     }
 
+    /**
+     * Récupère le produit dans Dolibarr ayant la référence donnée
+     */
     public function getProductByRef($ref){
         // URL
         $apiURL = $this->dolibarr->urlWS.'/products/ref/'.$ref;

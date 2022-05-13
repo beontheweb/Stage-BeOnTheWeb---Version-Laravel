@@ -10,11 +10,12 @@ use App\Models\User;
 
 class UserController extends Controller
 {
+    /**
+     * Renvoie vers la vue index des users
+     */
     public function index() {
 
         $users = User::all();
-
-
 
         return View::make('users.index', 
             [
@@ -23,6 +24,9 @@ class UserController extends Controller
         );
     }
 
+    /**
+     * Renvoie vers la vue show d'un user
+     */
     public function show($id){
         $user = User::find($id);
 
@@ -33,6 +37,9 @@ class UserController extends Controller
         );
     }
 
+    /**
+     * Met à jour les données de l'utilisateur ayant l'id donnée
+     */
     public function update($id, Request $request){
 
         $user = User::find($id);
@@ -51,6 +58,9 @@ class UserController extends Controller
         return Redirect::route('users.index');
     }
 
+    /**
+     * Supprimes l'utilisateur ayant l'id donnée
+     */
     public function delete($id){
         $user = User::find($id);
         $user->delete();

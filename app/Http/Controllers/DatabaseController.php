@@ -13,7 +13,9 @@ class DatabaseController extends Controller
 {
     public $octopusController;
 
-    //Vide les tables de donnée.
+    /**
+     * Réinitialise les tableaux bookings, bookingLines et relations de la base donnée
+     */
     public function resetDatabase(){
         DB::table('bookings')->truncate();
         DB::table('booking_lines')->truncate();
@@ -22,6 +24,9 @@ class DatabaseController extends Controller
         DB::statement("SET foreign_key_checks = 1");
     }
 
+    /**
+     * Reçoit les bookings d'Octopus et les mets dans la base donnée
+     */
     public function fillDB($array, $octopusController){
 
         foreach ($array as $value) {
@@ -31,11 +36,14 @@ class DatabaseController extends Controller
         }
     }
 
-    //Crée ou update un booking si alphaNumericalNumber existe déjà
+    /**
+     * Crée un booking ou l'update si son alphaNumericalNumber existe déjà dans le hub
+     */
     public function createBooking($value, $relationName){
 
             $alphaNumericalNumber = substr($value["bookyearPeriodeNr"], 0, 4)."-".$value["journalKey"]."-".sprintf("%03d", $value["documentSequenceNr"]);
 
+            //Crée la relation dans le hub si elle n'existe pas
             if (Relation::where('name', $relationName)->exists()) {
                 $relationId = Relation::where('name', $relationName)->pluck('id')[0];
              }
@@ -69,7 +77,9 @@ class DatabaseController extends Controller
             return $booking->id;
     }
 
-    //Crée ou update une booking line si alphaNumericalNumber existe déjà
+    /**
+     * Crée un bookingLine ou l'update si son alphaNumericalNumber existe déjà dans le hub
+     */
     public function createBookingLine($value, $id, $lineID, $alphaNumericalNumber){
 
         $alphaNumericalNumber = $alphaNumericalNumber."-".sprintf("%02d", $lineID);
@@ -81,7 +91,7 @@ class DatabaseController extends Controller
                 'baseAmount' => $value["baseAmount"],
                 'vatAmount' => $value["vatAmount"],
                 'vatCodeKey' => $value["vatCodeKey"],
-                'vatPercentage' => array_key_exists("vatRecupPercentage", $value) ? $value["vatRecupPercentage"] : 100,
+                'vatPercentage' => $value["vatRecupPercentage"] ?? 100,
                 'vatBasePercentage' => $this->octopusController->getVatBasePercentage($value["vatCodeKey"]),
                 'comment' => $value["comment"],
                 'booking_id' => $id,
@@ -90,7 +100,9 @@ class DatabaseController extends Controller
 
     }
 
-    //Crée une nouvelle relation
+    /**
+     * Crée une nouvelle relation dans le hub
+     */
     public function createRelation($id){
 
             $value = $this->octopusController->getRelation($id);
@@ -131,9 +143,9 @@ class DatabaseController extends Controller
             $relation->deliveryPostalCode = $value["deliveryPostalCode"] ?? "";
             $relation->deliveryStreet = $value["deliveryStreetAndNr"] ?? "";
             $relation->remarks = $value["remarks"] ?? "";
-            $relation->sddActive = $value["sddActive"];
-            $relation->sddMandateType = $value["sddMandateType"];
-            $relation->sddSeqtype = $value["sddSeqtype"];
+            $relation->sddActive = $value["sddActive"] ?? "";
+            $relation->sddMandateType = $value["sddMandateType"] ?? "";
+            $relation->sddSeqtype = $value["sddSeqtype"] ?? "";
             $relation->searchField1 = $value["searchField1"] ?? "";
             $relation->searchField2 = $value["searchField2"] ?? "";
  

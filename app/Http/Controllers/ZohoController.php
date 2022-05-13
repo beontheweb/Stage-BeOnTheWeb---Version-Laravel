@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class ZohoController extends Controller
 {
     public $zoho;
 
+    /**
+     * Récupère le token nécessaire pour les appels à l'api d'Octopus, valable 1h
+     */
     public function getToken($code) {
         // URL
         $apiURL = $this->zoho->urlWsAuth.'/oauth/v2/token?grant_type=authorization_code&client_id='.$this->zoho->clientId.'&client_secret='.$this->zoho->clientSecret.'&redirect_uri='.$this->zoho->redirectUri.'&code='.$code;
@@ -21,17 +23,9 @@ class ZohoController extends Controller
         return $responseBody;
     }
 
-    public function refreshToken() {
-        // URL
-        $apiURL = $this->zoho->urlWsAuth.'/oauth/v2/token?refresh_token='.$this->zoho->refreshToken.'&client_id='.$this->zoho->clientId.'&client_secret='.$this->zoho->clientSecret.'&grant_type=refresh_token';
-  
-        $response = Http::post($apiURL);
-  
-        $responseBody = json_decode($response->getBody(), true);
-
-        return $responseBody["access_token"];
-    }
-
+    /**
+     * Crée un booking dans Zoho Creator
+     */
     public function createBooking($booking, $relationId) {
 
         if($booking->journalKey == "A1"){
@@ -76,6 +70,7 @@ class ZohoController extends Controller
             ]
         ];
 
+        //Ces deux lignes fix un bug touchant parfois les montants htva, tva et tvac
         ini_set('precision', 10);
         ini_set('serialize_precision', 10);
 
@@ -83,11 +78,12 @@ class ZohoController extends Controller
   
         $responseBody = json_decode($response->getBody(), true);
 
-        Log::debug($responseBody);
-
         return $responseBody;
     }
 
+    /**
+     * Met à jour un booking dans Zoho Creator selon une id donnée
+     */
     public function updateBooking($bookingId, $booking, $relationId) {
 
         if($booking->journalKey == "A1"){
@@ -114,6 +110,7 @@ class ZohoController extends Controller
             ]
         ];
 
+        //Ces deux lignes fix un bug touchant parfois les montants htva, tva et tvac
         ini_set('precision', 10);
         ini_set('serialize_precision', 10);
 
@@ -121,16 +118,25 @@ class ZohoController extends Controller
   
         $responseBody = json_decode($response->getBody(), true);
 
-        Log::debug($responseBody);
-
         return $responseBody;
     }
 
+    /**
+     * Récupère tout les bookings de Zoho Creator
+     */
     public function getBookings() {
         $offset = 0;
         $bool = true;
         $bookings = [];
 
+        //Le nombre de bookings pouvant être récupéré en un appel est limité à 200
+        //Le code qui suit va rechercher les bookings 200 à la fois d'abord pour les achats puis pour les ventes 
+        //et les rassembles tous dans l'array "bookings"
+        
+
+        //Achat
+
+        //Appelé une première fois avec un offset de 199, nécessaire pour ne pas avoir un booking en double
         $bookingsWithOffset = $this->getBookingsWithOffset("A1", $offset, 199);
         if($bookingsWithOffset["code"] == 3100){
             $bool = false;
@@ -143,6 +149,7 @@ class ZohoController extends Controller
         }
         $offset += 200;
 
+        //Le reste des appels se fait avec un offset de 200
         while($bool){
             $bookingsWithOffset = $this->getBookingsWithOffset("A1", $offset, 200);
             if($bookingsWithOffset["code"] == 3100){
@@ -157,9 +164,13 @@ class ZohoController extends Controller
             $offset += 200;
         }
 
+
+        //Vente
+
         $offset = 0;
         $bool = true;
 
+        //Appelé une première fois avec un offset de 199, nécessaire pour ne pas avoir un booking en double
         $bookingsWithOffset = $this->getBookingsWithOffset("V1", $offset, 199);
         if($bookingsWithOffset["code"] == 3100){
             $bool = false;
@@ -172,6 +183,7 @@ class ZohoController extends Controller
         }
         $offset += 200;
 
+        //Le reste des appels se fait avec un offset de 200
         while($bool){
             $bookingsWithOffset = $this->getBookingsWithOffset("V1", $offset, 200);
             if($bookingsWithOffset["code"] == 3100){
@@ -189,6 +201,9 @@ class ZohoController extends Controller
         return $bookings;
     }
 
+    /**
+     * Récupère la liste des bookings soit d'achat, soit de vente et selon un offset donné. Ne renvoie pas plus de 200 bookings
+     */
     public function getBookingsWithOffset($journalKey, $offset, $limit) {
 
         if($journalKey == "A1"){
@@ -213,6 +228,9 @@ class ZohoController extends Controller
         return $responseBody;
     }
 
+    /**
+     * Vérifie si le booking existe déjà dans l'array donnée
+     */
     public function hasBooking($bookings, $alphaNumericalNumber) {
         if($bookings == ""){
             return false;
@@ -225,6 +243,9 @@ class ZohoController extends Controller
         return false;
     }
 
+    /**
+     * Crée une relation dans Zoho Creator
+     */
     public function createRelation($relation) {
 
         // URL
@@ -262,11 +283,18 @@ class ZohoController extends Controller
         return $responseBody;
     }
 
+    /**
+     * Récupère toute les relations de Zoho Creator
+     */
     public function getRelations() {
         $offset = 0;
         $bool = true;
         $relations = [];
 
+        //Le nombre de relations pouvant être récupérées en un appel est limité à 200
+        //Le code qui suit va rechercher les relations 200 à la fois et les rassembles toutes dans l'array "relations"
+
+        //Appelé une première fois avec un offset de 199, nécessaire pour ne pas avoir une relation en double
         $relationsWithOffset = $this->getRelationsWithOffset($offset, 199);
         if($relationsWithOffset["code"] == 3100){
             $bool = false;
@@ -279,6 +307,7 @@ class ZohoController extends Controller
         }
         $offset += 200;
 
+        //Le reste des appels se fait avec un offset de 200
         while($bool){
             $relationsWithOffset = $this->getRelationsWithOffset($offset, 200);
             if($relationsWithOffset["code"] == 3100){
@@ -296,6 +325,9 @@ class ZohoController extends Controller
         return $relations;
     }
 
+    /**
+     * Récupère la liste des relations selon un offset donné. Ne renvoie pas plus de 200 relations
+     */
     public function getRelationsWithOffset($offset, $limit) {
 
         // URL
@@ -313,6 +345,9 @@ class ZohoController extends Controller
         return $responseBody;
     }
 
+    /**
+     * Vérifie si la relation existe déjà dans l'array donnée
+     */
     public function hasRelation($relations, $name) {
         if($relations == ""){
             return false;

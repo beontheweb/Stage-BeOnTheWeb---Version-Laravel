@@ -11,10 +11,16 @@ use App\Models\User;
 
 class RegisterController extends Controller
 {
+    /**
+     * Renvoie la vue register de Auth
+     */ 
     public function show(){
         return view("auth.register");
     }
 
+    /**
+     * Vérifie les identifiants de connexions et enregistre l'utilisateur si ils sont valides
+     */
     public function register(){
 
         request()->validate([
@@ -28,8 +34,6 @@ class RegisterController extends Controller
             'email' => request('email'),
             'password' => Hash::make(request('password'))
         ]);
-
-        //event(new Registered($user));
 
         return Redirect::route('users.index');
     }
