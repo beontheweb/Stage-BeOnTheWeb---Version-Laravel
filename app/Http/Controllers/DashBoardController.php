@@ -239,8 +239,17 @@ class DashBoardController extends Controller
                 }
                 if($bool){
                     array_push($bookings, $validBooking);
+                }   
+            }
+            //Trie les factures par date de facture croissante puis par référence croissante
+            if(count($bookings) > 0){
+                $sort = array();
+                foreach ($bookings as $key => $booking)
+                {
+                    $sort["ref"][$key] = substr($booking['ref'], -9);
+                    $sort["date"][$key] = $booking['date'];
                 }
-                
+                array_multisort($sort["date"], SORT_ASC, $sort["ref"], SORT_ASC, $bookings);
             }
             
             //Pour chaque factures, crée la relation dans octopus si elle n'existe pas déjà puis crée la facture
@@ -255,6 +264,9 @@ class DashBoardController extends Controller
                 $result = $this->octopusController->createBooking($booking, $relationId, $externalRealtionId);
                 if(isset($result["errorCode"])) {
                     $octoBookingLog[$booking["ref"]] = "Erreur ".$result["errorCode"]." : ".$result["technicalInfo"];
+                }
+                elseif(isset($result["technicalInfo"])){
+                    $octoBookingLog[$booking["ref"]] = $result["technicalInfo"];
                 }
                 else {
                     $octoBookingLog[$booking["ref"]] = "Ajouté";

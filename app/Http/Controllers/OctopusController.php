@@ -218,6 +218,7 @@ class OctopusController extends Controller
                     ],
                     'externalRelationId' => $externalRealtionId
                 ],
+                //'bookyearPeriodeNr' => "20160".ceil(date("m", $booking["date_creation"])/3),
                 'bookyearPeriodeNr' => date("Y", $booking["date_creation"])."0".ceil(date("m", $booking["date_creation"])/3),
                 'documentDate' => date("Y-m-d", $booking["date"]),
                 'expiryDate' => date("Y-m-d", $booking["date_lim_reglement"]),
@@ -240,14 +241,14 @@ class OctopusController extends Controller
 
             $octoLine = [
                 'accountKey' => $product["accountancy_code_sell"] ?? $this->octopus->accountKeyDefault,
-                'baseAmount' => abs((double)$line["total_ht"]),
+                'baseAmount' => (double)$booking["total_ttc"] < 0 ? abs((double)$line["total_ht"]) : (double)$line["total_ht"],
                 'vatCodeKey' => (string)(int)$line["tva_tx"],
-                'vatAmount' => abs((double)$line["total_tva"]),
+                'vatAmount' => (double)$booking["total_ttc"] < 0 ? abs((double)$line["total_tva"]) : (double)$line["total_tva"],
                 'comment' => strip_tags(($line["product_ref"] ?? $this->octopus->accountKeyDefault)." - ".($product["label"] ?? "")." - ".$line["description"])
             ];
             $postInput['buySellBookingServiceData']['bookingLines'][$key] = $octoLine;
         };
-  
+
         // Headers
         $headers = [
             'accept' => '*/*',
