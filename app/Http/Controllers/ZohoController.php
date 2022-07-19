@@ -28,10 +28,10 @@ class ZohoController extends Controller
      */
     public function createBooking($booking, $relationId) {
 
-        if($booking->journalKey == "A1"){
+        if($booking->journalKey[0] == "A"){
             $type = "Achat";
         }
-        else{
+        elseif($booking->journalKey[0] == "V"){
             $type = "Vente";
         }
 
@@ -86,10 +86,10 @@ class ZohoController extends Controller
      */
     public function updateBooking($bookingId, $booking, $relationId) {
 
-        if($booking->journalKey == "A1"){
+        if($booking->journalKey[0] == "A"){
             $type = "Journals_Report";
         }
-        else{
+        elseif($booking->journalKey[0] == "V"){
             $type = "Vente_Report";
         }
 
@@ -137,7 +137,7 @@ class ZohoController extends Controller
         //Achat
 
         //Appelé une première fois avec un offset de 199, nécessaire pour ne pas avoir un booking en double
-        $bookingsWithOffset = $this->getBookingsWithOffset("A1", $offset, 199);
+        $bookingsWithOffset = $this->getBookingsWithOffset("A", $offset, 199);
         if($bookingsWithOffset["code"] == 3100){
             $bool = false;
         }
@@ -151,7 +151,7 @@ class ZohoController extends Controller
 
         //Le reste des appels se fait avec un offset de 200
         while($bool){
-            $bookingsWithOffset = $this->getBookingsWithOffset("A1", $offset, 200);
+            $bookingsWithOffset = $this->getBookingsWithOffset("A", $offset, 200);
             if($bookingsWithOffset["code"] == 3100){
                 $bool = false;
             }
@@ -206,10 +206,10 @@ class ZohoController extends Controller
      */
     public function getBookingsWithOffset($journalKey, $offset, $limit) {
 
-        if($journalKey == "A1"){
+        if($journalKey[0] == "A"){
             $type = "Journals_Report";
         }
-        else{
+        elseif($journalKey[0] == "V"){
             $type = "Vente_Report";
         }
 
