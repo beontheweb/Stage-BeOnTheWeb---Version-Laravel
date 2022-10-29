@@ -353,7 +353,7 @@ class ZohoController extends Controller
             return false;
         }
         foreach ($relations as $key => $relation) {
-            if($relation["Nom"] == $name){
+            if(strcasecmp(trim($relation["Nom"]), trim($name)) == 0){
                 return $relations[$key];
             }
         }
