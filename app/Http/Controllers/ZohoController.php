@@ -50,7 +50,7 @@ class ZohoController extends Controller
                 'N' => $booking->alphaNumericalNumber,
                 'Num_facture' => $booking->reference,
                 'PERIODE' => $booking->bookYearNumber,
-                'DATE1' => date_format($booking->expiryDate, "Y-m-d"),
+                'DATE1' => date_format($booking->bookingDate, "Y-m-d"),
                 'Tiers' => $relationId,
                 'Article_budg_taire' => null,
                 'Libell' => $booking->comment,
@@ -107,6 +107,7 @@ class ZohoController extends Controller
                 'Montant_HTVA' => $booking->HTVA,
                 'TVA' => $booking->TVA,
                 'Montant_TVAC' => $booking->amount,
+                'DATE1' => date_format($booking->bookingDate, "Y-m-d")
             ]
         ];
 
